@@ -14,8 +14,10 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.SoundCategory;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.Biome;
 
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -67,6 +69,7 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
     public boolean isReloaded = false;
     public boolean isScaled = false;
     public boolean isInitialized = false;
+    public float condMult = 1.0F;
 
     public EntityNukeTorex(World p_i1582_1_) {
         super(p_i1582_1_);
@@ -155,6 +158,14 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
             //MainRegistry.logger.info("[NTM] Nuke Block: "+"(" + this.posX + ", " + this.posY + ", " + this.posZ + ")"+" Client onUpdate ticksExisted: " + this.ticksExisted);
             double s = this.getScale();
             double cs = 1.5;
+
+            BlockPos biomePos = new BlockPos((int) posX, (int) posY, (int) posZ);
+            Biome biome = world.getBiome(biomePos);
+            float rainfall = biome.getRainfall();
+            float rainfallBase = Biome.getBiomeForId(1).getRainfall();
+            this.condMult = world.isRaining()
+                ? 1.0F / rainfallBase
+                : rainfall / rainfallBase;
 
             int explosionRadius = (int)(s * 100.0);
             int blastDuration = (int)Math.ceil(80 * Math.cbrt(explosionRadius / 100.0));
@@ -270,32 +281,37 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
                     }
                 }
 
-                // spawn condensation clouds
+                // spawn condensation clouds (lower band - stem)
                 if(currentTick > 130 * s && currentTick < 600 * s) {
+                    double radiusScale = 0.9 + condMult * 0.1;
+                    double yBase = -5 * condMult;
 
                     for(int i = 0; i < 20 * Math.min(s, 1.0); i++) {
                         for(int j = 0; j < 4 * Math.min(s, 1.0); j++) {
                             float angle = (float) (Math.PI * 2 * rand.nextDouble());
-                            Vec3 vec = Vec3.createVectorHelper(torusWidth + rollerSize * (5 + rand.nextDouble()), 0, 0);
+                            Vec3 vec = Vec3.createVectorHelper((torusWidth + rollerSize * (5 + rand.nextDouble())) * radiusScale, 0, 0);
                             vec.rotateAroundZ((float) (Math.PI / 45 * j));
                             vec.rotateAroundY(angle);
-                            Cloudlet cloud = new Cloudlet(posX + vec.xCoord, posY + coreHeight - 5 + j * s, posZ + vec.zCoord, angle, 0, (int) ((20 + currentTick / 10) * (1 + rand.nextDouble() * 0.1)), TorexType.CONDENSATION);
-                            cloud.setScale(0.125F * (float) (cs), 3F * (float) (cs));
+                            Cloudlet cloud = new Cloudlet(posX + vec.xCoord, posY + coreHeight + yBase + j * s, posZ + vec.zCoord, angle, 0, (int) ((20 + currentTick / 10) * (0.5 + condMult * 0.5) * (1 + rand.nextDouble() * 0.1)), TorexType.CONDENSATION);
+                            cloud.setScale((float)(0.125F * cs * (0.5F + condMult * 0.5F)), (float)(3F * cs * (0.5F + condMult * 0.5F)));
                             cloudlets.add(cloud);
                         }
                     }
                 }
 
+                // spawn condensation clouds (upper band - cap)
                 if(currentTick > 200 * s && currentTick < 600 * s) {
+                    double radiusScale = 0.9 + condMult * 0.1;
+                    double yBase = 25 / condMult * Math.min(s, 1.0);
 
                     for(int i = 0; i < 20 * Math.min(s, 1.0); i++) {
                         for(int j = 0; j < 4 * Math.min(s, 1.0); j++) {
                             float angle = (float) (Math.PI * 2 * rand.nextDouble());
-                            Vec3 vec = Vec3.createVectorHelper(torusWidth + rollerSize * (3 + rand.nextDouble() * 0.5), 0, 0);
+                            Vec3 vec = Vec3.createVectorHelper((torusWidth + rollerSize * (3 + rand.nextDouble() * 0.5)) * radiusScale, 0, 0);
                             vec.rotateAroundZ((float) (Math.PI / 45 * j));
                             vec.rotateAroundY(angle);
-                            Cloudlet cloud = new Cloudlet(posX + vec.xCoord, posY + coreHeight + 25 * Math.min(s, 1.0) + j * cs, posZ + vec.zCoord, angle, 0, (int) ((20 + currentTick / 10) * (1 + rand.nextDouble() * 0.1)), TorexType.CONDENSATION);
-                            cloud.setScale(0.125F * (float) (cs), 3F * (float) (cs));
+                            Cloudlet cloud = new Cloudlet(posX + vec.xCoord, posY + coreHeight + yBase + j * cs, posZ + vec.zCoord, angle, 0, (int) ((20 + currentTick / 10) * (0.5 + condMult * 0.5) * (1 + rand.nextDouble() * 0.1)), TorexType.CONDENSATION);
+                            cloud.setScale((float)(0.125F * cs * (0.5F + condMult * 0.5F)), (float)(3F * cs * (0.5F + condMult * 0.5F)));
                             cloudlets.add(cloud);
                         }
                     }
@@ -508,7 +524,7 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
 
         private Vec3 getCondensationMotion() {
             Vec3 delta = Vec3.createVectorHelper(posX - EntityNukeTorex.this.posX, 0, posZ - EntityNukeTorex.this.posZ).normalize();
-            double speed = motionCondensationMult * EntityNukeTorex.this.getScale() * 0.125D;
+            double speed = motionCondensationMult * EntityNukeTorex.this.getScale() * 0.125D * (0.5D + EntityNukeTorex.this.condMult * 0.5D);
             delta.xCoord *= speed;
             delta.yCoord = 0;
             delta.zCoord *= speed;
@@ -676,7 +692,7 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
 
         public float getAlpha() {
             float alpha = (1F - ((float)age / (float)cloudletLife)) * EntityNukeTorex.this.getAlpha();
-            if(this.type == TorexType.CONDENSATION) alpha *= 0.25;
+            if(this.type == TorexType.CONDENSATION) alpha *= 0.25F * EntityNukeTorex.this.condMult;
             return MathHelper.clamp(alpha, 0.0001F, 1F);
         }
 

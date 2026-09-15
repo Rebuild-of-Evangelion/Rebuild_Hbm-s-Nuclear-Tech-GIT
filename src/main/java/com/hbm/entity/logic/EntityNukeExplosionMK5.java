@@ -168,7 +168,7 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 
 				if(isLiving && fallout && this.ticksExisted <= Math.max((int)Math.ceil(this.radius * 0.02), 1)){
 					float eRads = (float)Math.min(10_000_000, Math.pow(radius, 3) * (float)Math.pow(0.5, (double)2 * this.ticksExisted / radius) + strength);
-					eRads *= (float)Math.exp(-dmgLen * weatherFactor / 130.0D);
+					eRads *= (float)Math.exp(-dmgLen / ContaminationUtil.ATTEN_GAMMA);
 					eRads /= (float)(dmgLen * dmgLen * Math.sqrt(res));
 					eRads *= dmgScale;
 
@@ -187,7 +187,7 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				double currentThermalRadius = radius * (1.0 - Math.pow((double)(this.ticksExisted - 1) / thermalDuration, 0.5));
 
 				if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.radius > 25 && this.ticksExisted <= thermalDuration && res < 2000 && len <= currentThermalRadius) {
-					float fireDamage = (float) ((0.35F * dmgScale * Math.pow(radius + 10, 3) * Math.pow(0.5, 0.5 * this.ticksExisted / radius) * Math.exp(-dmgLen * weatherFactor / 33.0D)) / (float) (dmgLen * dmgLen * res));
+					float fireDamage = (float) ((0.35F * dmgScale * Math.pow(radius + 10, 3) * Math.pow(0.5, 0.5 * this.ticksExisted / radius) * Math.exp(-dmgLen * weatherFactor / ContaminationUtil.ATTEN_THERMAL)) / (float) (dmgLen * dmgLen * res));
 					if (fireDamage > 0.025) {
 						if (fireDamage > 0.1 && e instanceof EntityPlayer p) {
 							if (p.getHeldItemMainhand().getItem() == ModItems.marshmallow && p.getRNG().nextInt((int) len) == 0) {

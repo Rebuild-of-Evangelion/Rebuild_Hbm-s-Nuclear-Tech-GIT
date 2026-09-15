@@ -63,6 +63,9 @@ public class ContaminationUtil {
 
 	public static final String NTM_NEUTRON_NBT_KEY = "ntmNeutron";
 
+	public static final double ATTEN_GAMMA = 130.0D;
+	public static final double ATTEN_THERMAL = 33.0D;
+
 	/**
 	 * Calculates how much radiation can be applied to this entity by calculating resistance
 	 * @param entity
@@ -568,14 +571,14 @@ public class ContaminationUtil {
 				res = 1;
 			if(isLiving && rad3d > 0){
 				float eRads = rad3d;
-				eRads *= (float)Math.exp(-dmgLen * weatherFactor / 130.0D);
+				eRads *= (float)Math.exp(-dmgLen / ATTEN_GAMMA);
 				eRads /= (float)(dmgLen * dmgLen * Math.sqrt(res));
 
 				contaminate((EntityLivingBase)e, HazardType.RADIATION, ContaminationType.CREATIVE, eRads);
 			}
 			if(isLiving && dig3d > 0){
 				float eDig = dig3d;
-				eDig *= (float)Math.exp(-dmgLen * weatherFactor / 130.0D);
+				eDig *= (float)Math.exp(-dmgLen / ATTEN_GAMMA);
 				eDig /= (float)(dmgLen * dmgLen * dmgLen);
 
 				contaminate((EntityLivingBase)e, HazardType.DIGAMMA, ContaminationType.DIGAMMA, eDig);
@@ -583,7 +586,7 @@ public class ContaminationUtil {
 
 			if(fire3d > 0.025 && res < 2000 && (!(getEntityConversionType(e) == 0) && !isPlayerExempt(e))) {
 				float fireDmg = fire3d;
-				fireDmg *= (float)Math.exp(-dmgLen * weatherFactor / 33.0D);
+				fireDmg *= (float)Math.exp(-dmgLen * weatherFactor / ATTEN_THERMAL);
 				fireDmg /= (float)(dmgLen * dmgLen * res);
 				if(fireDmg > 0.025){
 					if(fireDmg > 0.1 && e instanceof EntityPlayer p) {

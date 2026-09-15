@@ -163,9 +163,13 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
             Biome biome = world.getBiome(biomePos);
             float rainfall = biome.getRainfall();
             float rainfallBase = Biome.getBiomeForId(1).getRainfall();
-            this.condMult = world.isRaining()
-                ? 1.0F / rainfallBase
-                : rainfall / rainfallBase;
+            this.condMult = world.isRaining() && world.isRainingAt(biomePos)
+                    ? 1.0F / rainfallBase
+                    : rainfall / rainfallBase;
+
+            float temperature = biome.getTemperature(biomePos);
+            float tempBase = Biome.getBiomeForId(1).getTemperature(biomePos);
+            float tempShift = tempBase - temperature;
 
             int explosionRadius = (int)(s * 100.0);
             int blastDuration = (int)Math.ceil(80 * Math.cbrt(explosionRadius / 100.0));
@@ -284,7 +288,7 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
                 // spawn condensation clouds (lower band - stem)
                 if(currentTick > 130 * s && currentTick < 600 * s) {
                     double radiusScale = 0.9 + condMult * 0.1;
-                    double yBase = -5 * condMult;
+                    double yBase = -5 * condMult - tempShift;
 
                     for(int i = 0; i < 20 * Math.min(s, 1.0); i++) {
                         for(int j = 0; j < 4 * Math.min(s, 1.0); j++) {
@@ -302,7 +306,7 @@ public class EntityNukeTorex extends Entity implements IConstantRenderer {
                 // spawn condensation clouds (upper band - cap)
                 if(currentTick > 200 * s && currentTick < 600 * s) {
                     double radiusScale = 0.9 + condMult * 0.1;
-                    double yBase = 25 / condMult * Math.min(s, 1.0);
+                    double yBase = (25 / condMult - tempShift) * Math.min(s, 1.0);
 
                     for(int i = 0; i < 20 * Math.min(s, 1.0); i++) {
                         for(int j = 0; j < 4 * Math.min(s, 1.0); j++) {

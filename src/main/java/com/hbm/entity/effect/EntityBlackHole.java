@@ -142,10 +142,18 @@ public class EntityBlackHole extends Entity implements IConstantRenderer {
 						return;
 					}
 				}
+
+				double r3 = Math.max(dist * dist * dist, size * size * size);
+				double dx = posX - e.posX;
+				double dy = posY - e.posY;
+				double dz = posZ - e.posZ;
+				e.motionX += dx * strength / r3;
+				e.motionY += dy * strength * 2 / r3;
+				e.motionZ += dz * strength / r3;
 			} else {
 				if(!(e instanceof EntityItem)) vec.rotateAroundY((float)Math.toRadians(15));
 
-				double r2 = Math.max(dist * dist, 1);
+				double r2 = Math.max(dist * dist, size * size);
 				e.motionX += vec.xCoord * strength / r2;
 				e.motionY += vec.yCoord * strength * 2 / r2;
 				e.motionZ += vec.zCoord * strength / r2;

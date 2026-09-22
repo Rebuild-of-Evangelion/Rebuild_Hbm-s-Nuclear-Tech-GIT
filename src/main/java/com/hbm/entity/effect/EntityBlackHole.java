@@ -22,6 +22,8 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSourceIndirect;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -129,7 +131,12 @@ public class EntityBlackHole extends Entity implements IConstantRenderer {
 			}
 
 			if(dist < size * 1.5 && !(e instanceof EntityBlackHole)) {
-				e.attackEntityFrom(ModDamageSource.blackhole, 1000);
+				boolean damaged = e.attackEntityFrom(ModDamageSource.blackhole, 1000);
+
+				if(!damaged && !e.isDead) {
+					DamageSource damageSource = new EntityDamageSourceIndirect("blackhole", this, this).setDamageIsAbsolute().setDamageBypassesArmor().setDamageAllowedInCreativeMode().setMagicDamage();
+					e.attackEntityFrom(damageSource, 1000);
+				}
 
 				if(!(e instanceof EntityLivingBase)) e.setDead();
 

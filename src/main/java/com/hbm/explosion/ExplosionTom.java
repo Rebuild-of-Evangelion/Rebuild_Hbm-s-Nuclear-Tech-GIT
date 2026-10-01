@@ -1,13 +1,22 @@
 package com.hbm.explosion;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.hbm.config.CompatibilityConfig;
+import com.hbm.config.WorldConfig;
 import com.hbm.blocks.ModBlocks;
+import com.hbm.world.WorldUtil;
+import com.hbm.world.biome.BiomeGenDustWastes;
 
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
+import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.World;
 
 public class ExplosionTom
@@ -25,6 +34,8 @@ public class ExplosionTom
 	private int shell;
 	private int leg;
 	private int element;
+	private final Map<Long, Integer> biomeChunkCounts = new HashMap<Long, Integer>();
+	private final Map<Long, Integer> biomeChunkTotals = new HashMap<Long, Integer>();
 	
 	public void saveToNbt(NBTTagCompound nbt, String name) {
 		nbt.setInteger(name + "posX", posX);
@@ -96,7 +107,7 @@ public class ExplosionTom
 			double distance = Math.sqrt(X + Z); // Distance calculations used for crater rim stuff
 
 			int y = 256;
-			int terrain = 61;
+			int terrain = posY - 1;
 
 			double cA = (terrain - Math.pow(Math.E, -Math.pow(Math.sqrt(x * x + z * z), 2) / 40000) * 13) + world.rand.nextInt(2); // Basic crater bowl shape
 			double cB = cA + Math.pow(Math.E, -Math.pow(Math.sqrt(x * x + z * z) - 200, 2) / 400) * 13 ;// Crater peak ring
@@ -112,6 +123,8 @@ public class ExplosionTom
 			int offset = 20;
 			int threshold = (int) ((float) Math.sqrt(x * x + z * z) * (float) (height + offset) / (float) this.radius) + world.rand.nextInt(2) - offset;
 
+			if(y < terrain + 1) y = terrain + 1;
+
 			Material m;
 			while(y > threshold) {
 
@@ -119,51 +132,104 @@ public class ExplosionTom
 					break;
 				if(y <= craterFloor) {
 					pos.setPos(pX, y, pZ);
-					if(craterFloor-y < 12){
-						if(world.rand.nextInt(499) < 1) {
-							world.setBlockState(pos, ModBlocks.ore_tektite_osmiridium.getDefaultState());
-						} else {
-							world.setBlockState(pos, ModBlocks.tektite.getDefaultState());
-						}
+					if(world.rand.nextInt(200) == 0) {
+						setBlockAndNotify(pos, ModBlocks.ore_tektite_osmiridium.getDefaultState());
 					} else {
-						world.setBlockState(pos, ModBlocks.basalt_smooth.getDefaultState());
+						setBlockAndNotify(pos, ModBlocks.tektite.getDefaultState());
 					}
 
-				} else if(distance < 500){
+				} else {
 					if(y > terrain + 1) {
-						for(int i = -2; i < 3; i++) {
-							for(int j = -2; j < 3; j++) {
-								for(int k = -2; k < 3; k++) {
-									pos.setPos(pX + i, y + j, pZ + k);
-									m = world.getBlockState(pos).getMaterial();
-									if(m == Material.WATER || m == Material.ICE || m == Material.SNOW || m.getCanBurn()) {
-										world.removeTileEntity(pos);
-										world.setBlockToAir(pos);
-										world.setBlockToAir(pos.setPos(pX, y, pZ));
+						if(distance < 500) {
+							for(int i = -2; i < 3; i++) {
+								for(int j = -2; j < 3; j++) {
+									for(int k = -2; k < 3; k++) {
+										pos.setPos(pX + i, y + j, pZ + k);
+										m = world.getBlockState(pos).getMaterial();
+										if(m == Material.WATER || m == Material.ICE || m == Material.SNOW || m.getCanBurn()) {
+											world.removeTileEntity(pos);
+											world.setBlockToAir(pos);
+											world.setBlockToAir(pos.setPos(pX, y, pZ));
+										}
 									}
 								}
 							}
+							world.removeTileEntity(pos.setPos(pX, y, pZ));
+							setBlockAndNotify(pos.setPos(pX, y, pZ), Blocks.AIR.getDefaultState());
 						}
-						world.removeTileEntity(pos.setPos(pX, y, pZ));
-						world.setBlockToAir(pos.setPos(pX, y, pZ));
 					} else {
 						for(int i = -2; i < 3; i++) {
 							for(int j = -2; j < 3; j++) {
 								for(int k = -2; k < 3; k++) {
-									pos.setPos(pX + i, y + j, pZ + k);
-									m = world.getBlockState(pos).getMaterial();
-									if(m == Material.WATER || m == Material.ICE || world.isAirBlock(pos.setPos(pX + i, y, pZ + k))) {
-										world.setBlockState(pos.setPos(pX + i, y, pZ + k), Blocks.LAVA.getDefaultState());
-										world.setBlockState(pos.setPos(pX, y, pZ), Blocks.LAVA.getDefaultState());
+									m = world.getBlockState(pos.setPos(pX + i, y + j, pZ + k)).getMaterial();
+									IBlockState nb = world.getBlockState(pos.setPos(pX + i, y, pZ + k));
+									Material nm = nb.getMaterial();
+									if(m == Material.WATER || m == Material.ICE || nb.getBlock() == Blocks.AIR || nm == Material.SNOW || nm.getCanBurn()) {
+										setBlockAndNotify(pos.setPos(pX + i, y, pZ + k), Blocks.LAVA.getDefaultState());
+										setBlockAndNotify(pos.setPos(pX, y, pZ), Blocks.LAVA.getDefaultState());
 									}
 								}
 							}
 						}
-						world.setBlockState(pos.setPos(pX, y, pZ), Blocks.LAVA.getDefaultState());
+						setBlockAndNotify(pos.setPos(pX, y, pZ), Blocks.LAVA.getDefaultState());
 					}
 				}
 				y--;
 			}
+
+			if (WorldConfig.enableDustWastesBiome) {
+				WorldUtil.setBiome(world, pX, pZ, BiomeGenDustWastes.dustWastes);
+				int cx = pX >> 4;
+				int cz = pZ >> 4;
+				long cp = (((long) cx) << 32) | (cz & 0xFFFFFFFFL);
+				int total = biomeChunkTotals.getOrDefault(cp, -1);
+				if (total < 0) {
+					total = 0;
+					for (int tx = 0; tx < 16; tx++) {
+						for (int tz = 0; tz < 16; tz++) {
+							int dx = (cx << 4) + tx - posX;
+							int dz = (cz << 4) + tz - posZ;
+							if (dx * dx + dz * dz <= radius2) total++;
+						}
+					}
+					biomeChunkTotals.put(cp, total);
+				}
+				int count = biomeChunkCounts.getOrDefault(cp, 0) + 1;
+				if (count >= total) {
+					WorldUtil.syncBiomeChange(world, cx, cz);
+					biomeChunkCounts.remove(cp);
+					biomeChunkTotals.remove(cp);
+				} else {
+					biomeChunkCounts.put(cp, count);
+				}
+			}
 		}
+	}
+
+	private void setBlockAndNotify(MutableBlockPos pos, IBlockState state) {
+		Block oldBlock = world.getBlockState(pos).getBlock();
+		world.setBlockState(pos, state, 2);
+		for(EnumFacing facing : EnumFacing.values()) {
+			BlockPos np = pos.offset(facing);
+			if(world.isBlockLoaded(np)) {
+				Block b = world.getBlockState(np).getBlock();
+				if(b != Blocks.WATER && b != Blocks.FLOWING_WATER && !hasWaterNeighbor(np)) {
+					world.neighborChanged(np, oldBlock, pos);
+				}
+			}
+		}
+	}
+
+	private boolean hasWaterNeighbor(BlockPos pos) {
+		for(EnumFacing facing : EnumFacing.values()) {
+			BlockPos np = pos.offset(facing);
+			if(world.isBlockLoaded(np)) {
+				Block b = world.getBlockState(np).getBlock();
+				if(b == Blocks.WATER || b == Blocks.FLOWING_WATER) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

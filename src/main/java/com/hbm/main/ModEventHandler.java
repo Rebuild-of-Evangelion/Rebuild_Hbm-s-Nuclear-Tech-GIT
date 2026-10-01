@@ -27,6 +27,9 @@ import com.hbm.capability.HbmLivingCapability;
 import com.hbm.capability.HbmLivingProps;
 import com.hbm.capability.HbmCapability.IHBMData;
 import com.hbm.config.GeneralConfig;
+import com.hbm.config.WorldConfig;
+import com.hbm.world.biome.BiomeGenDustWastes;
+import net.minecraft.world.biome.Biome;
 import com.hbm.config.CompatibilityConfig;
 import com.hbm.entity.logic.IChunkLoader;
 import com.hbm.entity.mob.EntityCyberCrab;
@@ -377,7 +380,7 @@ public class ModEventHandler {
 	}
 
 	private static final Set<String> hashes = new HashSet();
-
+	
 	static {
 		hashes.add("41de5c372b0589bbdb80571e87efa95ea9e34b0d74c6005b8eab495b7afd9994");
 		hashes.add("31da6223a100ed348ceb3254ceab67c9cc102cb2a04ac24de0df3ef3479b1036");
@@ -1178,6 +1181,14 @@ public class ModEventHandler {
 	}
 
 	@SubscribeEvent
+	public void onBiomeRegister(RegistryEvent.Register<Biome> evt) {
+		if (WorldConfig.enableDustWastesBiome) {
+			evt.getRegistry().register(BiomeGenDustWastes.dustWastes.setRegistryName("hbm", "dust_wastes"));
+			BiomeGenDustWastes.initDictionary();
+		}
+	}
+
+	@SubscribeEvent
 	public void onRecipeRegister(RegistryEvent.Register<IRecipe> evt) {
 		IRecipe[] recipes = new IRecipe[12];
 		IRecipe recipe = null;
@@ -1188,5 +1199,4 @@ public class ModEventHandler {
 		System.out.println("On Recipe Register");
 		return false;
 	}
-	
 }

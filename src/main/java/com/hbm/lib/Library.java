@@ -1206,4 +1206,57 @@ public static boolean canConnect(IBlockAccess world, BlockPos pos, ForgeDirectio
 		}
 		return Math.max(y, maxBedrockTop - minOffset);
 	}
+
+	// ----------------- Vanilla Encoding (added for parallel nuke explosion) -----------------
+
+	/** Identical to {@link BlockPos#toLong()} */
+	public static long blockPosToLong(int x, int y, int z) {
+		return ((long) x & 0x03FF_FFFF) << 38 | ((long) y & 0x0000_0FFF) << 26 | ((long) z & 0x03FF_FFFF);
+	}
+
+	public static int getBlockPosX(long serialized) {
+		return (int) (serialized >> 38);
+	}
+
+	public static int getBlockPosY(long serialized) {
+		return (int) (serialized << 26 >> 52);
+	}
+
+	public static int getBlockPosZ(long serialized) {
+		return (int) (serialized << 38 >> 38);
+	}
+
+	public static BlockPos.MutableBlockPos fromLong(BlockPos.MutableBlockPos pos, long serialized) {
+		pos.setPos(getBlockPosX(serialized), getBlockPosY(serialized), getBlockPosZ(serialized));
+		return pos;
+	}
+
+	public static int getChunkPosX(long ck) {
+		return (int) ck;
+	}
+
+	public static int getChunkPosZ(long ck) {
+		return (int) (ck >>> 32);
+	}
+
+	/** Identical to {@link net.minecraft.world.chunk.BlockStateContainer#getIndex(int, int, int)} */
+	public static int packLocal(int localX, int localY, int localZ) {
+		return (localY << 8) | (localZ << 4) | localX;
+	}
+
+	public static int blockPosToLocal(int x, int y, int z) {
+		return ((y & 0xF) << 8) | ((z & 0xF) << 4) | (x & 0xF);
+	}
+
+	public static int getLocalX(int packed) {
+		return packed & 0xF;
+	}
+
+	public static int getLocalY(int packed) {
+		return (packed >>> 8) & 0xF;
+	}
+
+	public static int getLocalZ(int packed) {
+		return (packed >>> 4) & 0xF;
+	}
 }

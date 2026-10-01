@@ -6,6 +6,7 @@ import java.util.Map.Entry;
 import com.hbm.config.BombConfig;
 import com.hbm.config.CompatibilityConfig;
 import com.hbm.entity.effect.EntityFalloutRain;
+import com.hbm.interfaces.IExplosionRay;
 import com.hbm.render.amlfrom1710.Vec3;
 
 import net.minecraft.util.EnumFacing;
@@ -21,7 +22,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-public class ExplosionNukeRayBatched {
+public class ExplosionNukeRayBatched implements IExplosionRay {
 
 	public HashMap<ChunkPos, BitSet> perChunk = new HashMap<ChunkPos, BitSet>();
 	public List<ChunkPos> orderedChunks = new ArrayList<>();
@@ -257,7 +258,7 @@ public class ExplosionNukeRayBatched {
 					IBlockState stateNeighbor = world.getBlockState(neighborPos);
 					Block blockNeighbor = stateNeighbor.getBlock();
 
-					if (blockNeighbor != Blocks.WATER && blockNeighbor != Blocks.FLOWING_WATER) {
+					if (blockNeighbor != Blocks.WATER && blockNeighbor != Blocks.FLOWING_WATER && !hasWaterNeighbor(neighborPos)) {
 						world.neighborChanged(neighborPos, blockBelow, pos);
 					}
 				}
@@ -282,6 +283,19 @@ public class ExplosionNukeRayBatched {
 		}
 	}
 	
+	private boolean hasWaterNeighbor(BlockPos pos) {
+		for (EnumFacing facing : EnumFacing.values()) {
+			BlockPos np = pos.offset(facing);
+			if (world.isBlockLoaded(np)) {
+				Block b = world.getBlockState(np).getBlock();
+				if (b == Blocks.WATER || b == Blocks.FLOWING_WATER) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	public void readEntityFromNBT(NBTTagCompound nbt) {
 		radius = nbt.getInteger("radius");
 		strength = nbt.getInteger("strength");
@@ -345,5 +359,39 @@ public class ExplosionNukeRayBatched {
 	// Who tf forgot to add a way to retrieve the long array from NBTTagLongArray??
 	public static long[] getLongArray(NBTTagLongArray nbt) {
 		return ObfuscationReflectionHelper.getPrivateValue(NBTTagLongArray.class, nbt, 0);
+	}
+
+	@Override
+	public void update(int processTimeMs) {
+		if(!CompatibilityConfig.isWarDim(world)) {
+			isAusf3Complete = true;
+			return;
+		}
+		if(isAusf3Complete)
+			processChunk(processTimeMs);
+		else
+			collectTip(processTimeMs);
+	}
+
+	@Override
+	public void cancel() {
+		isAusf3Complete = true;
+		orderedChunks.clear();
+		perChunk.clear();
+	}
+
+	@Override
+	public boolean isComplete() {
+		return isAusf3Complete && perChunk.isEmpty();
+	}
+
+	@Override
+	public boolean isContained() {
+		return isContained;
+	}
+
+	@Override
+	public void setDetonator(UUID detonator) {
+		// the batched executor does not track the detonator
 	}
 }

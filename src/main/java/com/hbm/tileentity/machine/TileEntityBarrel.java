@@ -11,6 +11,7 @@ import com.hbm.packet.FluidTankPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TileEntityProxyCombo;
+import com.hbm.world.biome.BiomeGenDustWastes;
 
 import net.minecraft.block.Block;
 import net.minecraft.init.SoundEvents;
@@ -21,9 +22,11 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ITickable;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.EnumSkyBlock;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidTank;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
@@ -65,6 +68,14 @@ public class TileEntityBarrel extends TileEntityMachineBase implements ITickable
 			
 			if(tank.getFluid() != null && tank.getFluidAmount() > 0) {
 				checkFluidInteraction();
+			}
+
+			// 1.7.10: a barrel full of water explodes in the crater's eternal fire.
+			if (tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
+				int light = world.getLightFor(EnumSkyBlock.SKY, pos);
+				if (light > 7) {
+					world.newExplosion(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 5.0F, true, true);
+				}
 			}
 			
 			PacketDispatcher.wrapper.sendToAllAround(new FluidTankPacket(pos, new FluidTank[]{tank}), new TargetPoint(world.provider.getDimension(), pos.getX(), pos.getY(), pos.getZ(), 100));

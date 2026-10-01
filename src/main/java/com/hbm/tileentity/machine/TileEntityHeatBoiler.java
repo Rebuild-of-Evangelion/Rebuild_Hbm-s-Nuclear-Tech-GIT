@@ -9,6 +9,7 @@ import com.hbm.lib.HBMSoundHandler;
 import com.hbm.main.MainRegistry;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.INBTPacketReceiver;
+import com.hbm.world.biome.BiomeGenDustWastes;
 
 import api.hbm.tile.IHeatSource;
 import net.minecraft.nbt.NBTTagCompound;
@@ -257,6 +258,11 @@ public class TileEntityHeatBoiler extends TileEntity implements INBTPacketReceiv
     protected void tryPullHeat() {
 
         if(this.heat >= TileEntityHeatBoiler.maxHeat) return;
+        if (world.getBiome(pos) instanceof BiomeGenDustWastes) {
+            this.heat += Math.max(1, (maxHeat - this.heat) / 1000);
+            if (this.heat > maxHeat) this.heat = maxHeat;
+            return;
+        }
         BlockPos blockBelow = pos.down();
         TileEntity con = world.getTileEntity(blockBelow);
 
@@ -305,5 +311,4 @@ public class TileEntityHeatBoiler extends TileEntity implements INBTPacketReceiv
     public double getMaxRenderDistanceSquared() {
         return 65536.0D;
     }
-
 }

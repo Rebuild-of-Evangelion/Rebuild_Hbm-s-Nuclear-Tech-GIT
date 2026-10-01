@@ -10,6 +10,7 @@ import com.hbm.packet.FluidTankPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TileEntityProxyCombo;
+import com.hbm.world.biome.BiomeGenDustWastes;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
@@ -18,10 +19,12 @@ import net.minecraft.util.ITickable;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraft.world.EnumSkyBlock;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTank;
+import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.capability.CapabilityFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidTankProperties;
@@ -87,6 +90,15 @@ public class TileEntityMachineFluidTank extends TileEntityMachineBase implements
 			if(tank.getFluid() != null && (tank.getFluid().getFluid() == ModForgeFluids.AMAT || tank.getFluid().getFluid() == ModForgeFluids.ASCHRAB)) {
 				world.destroyBlock(pos, false);
 				world.newExplosion(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 5, true, true);
+			}
+
+			// 1.7.10: a water-filled fluid tank explodes in the crater's eternal fire.
+			if (tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
+				int light = world.getLightFor(EnumSkyBlock.SKY, pos.up(2));
+				if (light > 7) {
+					world.destroyBlock(pos, false);
+					world.newExplosion(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 5.0F, true, true);
+				}
 			}
 			
 			PacketDispatcher.wrapper.sendToAllTracking(new FluidTankPacket(pos.getX(), pos.getY(), pos.getZ(), new FluidTank[] {tank}), new TargetPoint(world.provider.getDimension(), pos.getX(), pos.getY(), pos.getZ(), 10));

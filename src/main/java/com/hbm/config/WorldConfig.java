@@ -1,9 +1,8 @@
 package com.hbm.config;
 
-import com.hbm.config.CompatibilityConfig;
-
 public class WorldConfig {
 
+	public static boolean enableDustWastesBiome = true;
 	public static int uraniumSpawn = 6;
 	public static int thoriumSpawn = 7;
 	public static int titaniumSpawn = 8;
@@ -147,7 +146,5 @@ public class WorldConfig {
 		meteorStrikeChance = convertToInt(CompatibilityConfig.meteorStrikeChance.get(0));
 		meteorShowerChance = convertToInt(CompatibilityConfig.meteorShowerChance.get(0));
 		meteorShowerDuration = convertToInt(CompatibilityConfig.meteorShowerDuration.get(0));
-		
 	}
-
 }

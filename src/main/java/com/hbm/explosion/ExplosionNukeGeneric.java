@@ -13,6 +13,7 @@ import java.util.Random;
 
 import com.hbm.lib.Library;
 import net.minecraft.block.*;
+import net.minecraftforge.common.IPlantable;
 import org.apache.logging.log4j.Level;
 
 import com.hbm.config.CompatibilityConfig;
@@ -288,7 +289,17 @@ public class ExplosionNukeGeneric {
 				}
 			}
 
-			else if(b == Blocks.DIRT || b == Blocks.FARMLAND) {
+			else if(b == Blocks.DIRT) {
+				BlockDirt.DirtType meta = bs.getValue(BlockDirt.VARIANT);
+				if(meta == BlockDirt.DirtType.DIRT)
+					world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+				else if(meta == BlockDirt.DirtType.COARSE_DIRT)
+					world.setBlockState(pos, ModBlocks.waste_gravel.getDefaultState());
+				else if(meta == BlockDirt.DirtType.PODZOL)
+					world.setBlockState(pos, ModBlocks.waste_mycelium.getDefaultState());
+			}
+
+			else if(b == Blocks.FARMLAND) {
 				world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
 			}
 
@@ -303,9 +314,13 @@ public class ExplosionNukeGeneric {
 			else if(b instanceof BlockIce) {
 				world.setBlockState(pos, ModBlocks.waste_ice.getDefaultState());
 			}
-			
-			else if(b instanceof BlockBush || b == Blocks.TALLGRASS) {
-				world.setBlockState(pos, Blocks.DEADBUSH.getDefaultState());
+
+			else if(b instanceof BlockBush) {
+				IBlockState d = world.getBlockState(pos.down());
+				Block dblock = d.getBlock();
+				boolean canStay = dblock.canSustainPlant(d, world, pos.down(), EnumFacing.UP, (IPlantable) b);
+				if(canStay) world.setBlockState(pos, Blocks.DEADBUSH.getDefaultState());
+				else world.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 
 			else if(b == Blocks.STONE){
@@ -325,6 +340,7 @@ public class ExplosionNukeGeneric {
 			}
 			
 			else if (bs.getMaterial() == Material.WOOD && bs.isOpaqueCube() && b != ModBlocks.waste_log) {
+				world.removeTileEntity(pos);
 				world.setBlockState(pos, ModBlocks.waste_planks.getDefaultState());
 			}
 
@@ -429,7 +445,13 @@ public class ExplosionNukeGeneric {
 			}
 
 			else if(b == Blocks.DIRT) {
-				world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+				BlockDirt.DirtType meta = world.getBlockState(pos).getValue(BlockDirt.VARIANT);
+				if(meta == BlockDirt.DirtType.DIRT)
+					world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+				else if(meta == BlockDirt.DirtType.COARSE_DIRT)
+					world.setBlockState(pos, ModBlocks.waste_gravel.getDefaultState());
+				else if(meta == BlockDirt.DirtType.PODZOL)
+					world.setBlockState(pos, ModBlocks.waste_mycelium.getDefaultState());
 			}
 
 			else if(b instanceof BlockSnow) {
@@ -444,8 +466,12 @@ public class ExplosionNukeGeneric {
 				world.setBlockState(pos, ModBlocks.waste_ice.getDefaultState());
 			}
 
-			else if(b instanceof BlockBush || b == Blocks.TALLGRASS) {
-				world.setBlockState(pos, Blocks.DEADBUSH.getDefaultState());
+			else if(b instanceof BlockBush) {
+				IBlockState d = world.getBlockState(pos.down());
+				Block dblock = d.getBlock();
+				boolean canStay = dblock.canSustainPlant(d, world, pos.down(), EnumFacing.UP, (IPlantable) b);
+				if(canStay) world.setBlockState(pos, Blocks.DEADBUSH.getDefaultState());
+				else world.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 
 			else if(b == Blocks.STONE){
@@ -689,7 +715,7 @@ public class ExplosionNukeGeneric {
 				return;
 			}
 			
-			if(m == Material.CACTUS || m == Material.CORAL || m == Material.LEAVES || m == Material.PLANTS || m == Material.SPONGE || m == Material.VINE || m == Material.GOURD || m == Material.WOOD) {
+			if(m == Material.CACTUS || m == Material.CORAL || m == Material.LEAVES || m == Material.PLANTS || m == Material.SPONGE || m == Material.VINE || m == Material.GOURD || m == Material.WOOD || b.getBlock() == Blocks.WATERLILY) {
 				world.setBlockToAir(pos);
 			}
 		}

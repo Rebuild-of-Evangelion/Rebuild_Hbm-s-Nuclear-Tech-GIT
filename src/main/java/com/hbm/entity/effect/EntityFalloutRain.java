@@ -20,6 +20,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityFallingBlock;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -30,6 +31,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraftforge.common.IPlantable;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -320,6 +322,32 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
         return 7;
     }
 
+	private static final Block[] SELLAFIELD = {
+		ModBlocks.sellafield_slaked, ModBlocks.sellafield_0, ModBlocks.sellafield_1,
+		ModBlocks.sellafield_2, ModBlocks.sellafield_3, ModBlocks.sellafield_4, ModBlocks.sellafield_core
+	};
+
+	private static final Set<Block> META_TIERED = new HashSet<>(Arrays.asList(
+			ModBlocks.fallout, ModBlocks.waste_earth, ModBlocks.waste_dirt,
+			ModBlocks.waste_gravel, ModBlocks.waste_snow, ModBlocks.waste_snow_block,
+			ModBlocks.waste_mycelium, ModBlocks.waste_sand, ModBlocks.waste_sand_red,
+			ModBlocks.waste_trinitite, ModBlocks.waste_trinitite_red,
+			ModBlocks.waste_sandstone, ModBlocks.waste_sandstone_red,
+			ModBlocks.waste_terracotta, ModBlocks.waste_grass_tall));
+
+		/** Maps a distance to a 0..6 tier index. sellafield=true uses the 0.1 jitter (meta uses 0.2); stoneDepth=0 with maxStoneDepth=-1 disables the depth term. */
+	private int tierIndex(double dist, boolean sellafield, int stoneDepth, int maxStoneDepth){
+		double spread = sellafield ? 0.1D : 0.2D;
+		double ranDist = dist * (1D + world.rand.nextDouble() * spread);
+		if(ranDist > s1 || stoneDepth == maxStoneDepth) return 0;
+		if(ranDist > s2 || stoneDepth == maxStoneDepth - 1) return 1;
+		if(ranDist > s3 || stoneDepth == maxStoneDepth - 2) return 2;
+		if(ranDist > s4 || stoneDepth == maxStoneDepth - 3) return 3;
+		if(ranDist > s5 || stoneDepth == maxStoneDepth - 4) return 4;
+		if(ranDist > s6 || stoneDepth == maxStoneDepth - 5) return 5;
+		return 6;
+	}
+
 	private int[] doFallout(MutableBlockPos pos, double dist){
 		int stoneDepth = 0;
 		int maxStoneDepth =getMaxStoneDepth(dist);
@@ -408,23 +436,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 			}
 
 			else if(bblock instanceof BlockStone || bblock == Blocks.COBBLESTONE) {
-				double ranDist = dist * (1D + world.rand.nextDouble()*0.1D);
-				if(ranDist > s1 || stoneDepth==maxStoneDepth)
-					world.setBlockState(pos, ModBlocks.sellafield_slaked.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s2 || stoneDepth==maxStoneDepth-1)
-					world.setBlockState(pos, ModBlocks.sellafield_0.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s3 || stoneDepth==maxStoneDepth-2)
-					world.setBlockState(pos, ModBlocks.sellafield_1.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s4 || stoneDepth==maxStoneDepth-3)
-					world.setBlockState(pos, ModBlocks.sellafield_2.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s5 || stoneDepth==maxStoneDepth-4)
-					world.setBlockState(pos, ModBlocks.sellafield_3.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s6 || stoneDepth==maxStoneDepth-5)
-					world.setBlockState(pos, ModBlocks.sellafield_4.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist <= s6 || stoneDepth==maxStoneDepth-6)
-					world.setBlockState(pos, ModBlocks.sellafield_core.getStateFromMeta(world.rand.nextInt(4)));
-				else
-					break;
+				world.setBlockState(pos, SELLAFIELD[tierIndex(dist, true, stoneDepth, maxStoneDepth)].getStateFromMeta(world.rand.nextInt(4)));
 				continue;
 
 			} else if(bblock instanceof BlockGrass) {
@@ -459,16 +471,31 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				world.setBlockState(pos,ModBlocks.waste_ice.getDefaultState(), 2);
 				continue;
 
+			} else if(bblock == Blocks.WATERLILY) {
+				world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+				continue;
+
 			} else if(bblock instanceof BlockBush) {
-				if(world.getBlockState(pos.down()).getBlock() == Blocks.FARMLAND){
+				IBlockState d = world.getBlockState(pos.down());
+				Block dblock = d.getBlock();
+				boolean canStay = dblock.canSustainPlant(d, world, pos.down(), EnumFacing.UP, (IPlantable) bblock);
+				if(!canStay){
+					world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
+					continue;
+				}
+				if(dblock == Blocks.FARMLAND){
 					placeBlockFromDist(dist, ModBlocks.waste_dirt, pos.down());
 					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos, 3);
-				} else if(world.getBlockState(pos.down()).getBlock() instanceof BlockGrass){
+				} else if(dblock instanceof BlockGrass){
 					placeBlockFromDist(dist, ModBlocks.waste_earth, pos.down());
 					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos, 3);
-				} else if(world.getBlockState(pos.down()).getBlock() == Blocks.MYCELIUM){
+				} else if(dblock instanceof BlockDirt){
+					BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
+					placeBlockFromDist(dist, meta == BlockDirt.DirtType.PODZOL ? ModBlocks.waste_mycelium : ModBlocks.waste_dirt, pos.down());
+					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos, 3);
+				} else if(dblock == Blocks.MYCELIUM){
 					placeBlockFromDist(dist, ModBlocks.waste_mycelium, pos.down());
-					world.setBlockState(pos,ModBlocks.mush.getDefaultState(), 3);
+					world.setBlockState(pos, ModBlocks.mush.getDefaultState(), 3);
 				}
 				continue;
 
@@ -549,28 +576,18 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				}
 				continue;
 			}
-			else if(b.getBlock() == ModBlocks.sellafield_4) {
-				world.setBlockState(pos, ModBlocks.sellafield_core.getStateFromMeta(world.rand.nextInt(4)));
+			else if(b.getBlock() == ModBlocks.sellafield_slaked || b.getBlock() == ModBlocks.sellafield_0 || b.getBlock() == ModBlocks.sellafield_1 || b.getBlock() == ModBlocks.sellafield_2 || b.getBlock() == ModBlocks.sellafield_3 || b.getBlock() == ModBlocks.sellafield_4 || b.getBlock() == ModBlocks.sellafield_core) {
+				int nt = tierIndex(dist, true, stoneDepth, maxStoneDepth);
+				if(nt > Arrays.asList(SELLAFIELD).indexOf(bblock)){
+					world.setBlockState(pos, SELLAFIELD[nt].getStateFromMeta(world.rand.nextInt(4)));
+				}
 				continue;
 			}
-			else if(b.getBlock() == ModBlocks.sellafield_3) {
-				world.setBlockState(pos, ModBlocks.sellafield_4.getStateFromMeta(world.rand.nextInt(4)));
-				continue;
-			}
-			else if(b.getBlock() == ModBlocks.sellafield_2) {
-				world.setBlockState(pos, ModBlocks.sellafield_3.getStateFromMeta(world.rand.nextInt(4)));
-				continue;
-			}
-			else if(b.getBlock() == ModBlocks.sellafield_1) {
-				world.setBlockState(pos, ModBlocks.sellafield_2.getStateFromMeta(world.rand.nextInt(4)));
-				continue;
-			}
-			else if(b.getBlock() == ModBlocks.sellafield_0) {
-				world.setBlockState(pos, ModBlocks.sellafield_1.getStateFromMeta(world.rand.nextInt(4)));
-				continue;
-			}
-			else if(b.getBlock() == ModBlocks.sellafield_slaked) {
-				world.setBlockState(pos, ModBlocks.sellafield_0.getStateFromMeta(world.rand.nextInt(4)));
+			else if(META_TIERED.contains(bblock)) {
+				int m = tierIndex(dist, false, 0, -1);
+				if(m > b.getBlock().getMetaFromState(b)){
+					world.setBlockState(pos, bblock.getStateFromMeta(m), 2);
+				}
 				continue;
 			}
 			else if(b.getBlock() == Blocks.VINE) {
@@ -664,21 +681,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 	}
 
 	public void placeBlockFromDist(double dist, Block b, BlockPos pos, int flags){
-		double ranDist = dist * (1D + world.rand.nextDouble()*0.2);
-		if(ranDist > s1)
-			world.setBlockState(pos,b.getStateFromMeta(0), flags);
-		else if(ranDist > s2)
-			world.setBlockState(pos,b.getStateFromMeta(1), flags);
-		else if(ranDist > s3)
-			world.setBlockState(pos,b.getStateFromMeta(2), flags);
-		else if(ranDist > s4)
-			world.setBlockState(pos,b.getStateFromMeta(3), flags);
-		else if(ranDist > s5)
-			world.setBlockState(pos,b.getStateFromMeta(4), flags);
-		else if(ranDist > s6)
-			world.setBlockState(pos,b.getStateFromMeta(5), flags);
-		else if(ranDist <= s6)
-			world.setBlockState(pos,b.getStateFromMeta(6), flags);
+		world.setBlockState(pos, b.getStateFromMeta(tierIndex(dist, false, 0, -1)), flags);
 	}
 
 	private void flood(MutableBlockPos pos){

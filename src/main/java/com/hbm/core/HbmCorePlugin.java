@@ -23,6 +23,8 @@ import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 @IFMLLoadingPlugin.TransformerExclusions({"com.hbm.core"})
 public class HbmCorePlugin implements IFMLLoadingPlugin, IClassTransformer {
 
+	private static boolean runtimeDeobfEnabled = false;
+
 	@Override
 	public String[] getASMTransformerClass() {
 		return new String[]{"com.hbm.core.HbmCorePlugin"};
@@ -30,6 +32,11 @@ public class HbmCorePlugin implements IFMLLoadingPlugin, IClassTransformer {
 
 	public static boolean hasPermanentTag(Entity entity) {
 		return entity.getEntityData().getBoolean("isPermanent");
+	}
+
+	/** Resolve a field name for runtime reflection: SRG name in production (obfuscated), MCP name in dev. */
+	public static String chooseName(String mcp, String srg) {
+		return runtimeDeobfEnabled ? srg : mcp;
 	}
 
 	@Override
@@ -97,6 +104,7 @@ public class HbmCorePlugin implements IFMLLoadingPlugin, IClassTransformer {
 
 	@Override
 	public void injectData(Map<String, Object> data) {
+		runtimeDeobfEnabled = (Boolean) data.get("runtimeDeobfuscationEnabled");
 	}
 
 	@Override

@@ -60,7 +60,6 @@ import com.hbm.entity.effect.EntityFalloutRainParallelized;
 import com.hbm.entity.effect.EntityFalloutUnderGround;
 import com.hbm.entity.effect.EntityNukeTorex;
 import com.hbm.entity.effect.EntityQuasar;
-import com.hbm.explosion.ExplosionLarge;
 import com.hbm.entity.effect.EntityRagingVortex;
 import com.hbm.entity.effect.EntitySpear;
 import com.hbm.entity.effect.EntityVortex;

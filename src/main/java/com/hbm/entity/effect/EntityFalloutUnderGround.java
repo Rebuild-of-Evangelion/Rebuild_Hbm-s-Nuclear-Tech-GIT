@@ -8,6 +8,7 @@ import com.hbm.config.CompatibilityConfig;
 import com.hbm.entity.logic.EntityChunky;
 import com.hbm.blocks.generic.WasteLog;
 
+import java.util.*;
 import net.minecraft.block.*;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.block.material.Material;
@@ -18,7 +19,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraftforge.common.IPlantable;
 import net.minecraftforge.oredict.OreDictionary;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
 import net.minecraft.world.World;
@@ -136,21 +139,15 @@ public class EntityFalloutUnderGround extends EntityChunky {
 			bblock = b.getBlock();
 
 			if(bblock instanceof BlockStone || bblock == Blocks.COBBLESTONE) {
-				double ranDist = l * (1D + world.rand.nextDouble()*0.1D);
-				if(ranDist > s1)
-					world.setBlockState(pos, ModBlocks.sellafield_slaked.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s2)
-					world.setBlockState(pos, ModBlocks.sellafield_0.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s3)
-					world.setBlockState(pos, ModBlocks.sellafield_1.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s4)
-					world.setBlockState(pos, ModBlocks.sellafield_2.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s5)
-					world.setBlockState(pos, ModBlocks.sellafield_3.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist > s6)
-					world.setBlockState(pos, ModBlocks.sellafield_4.getStateFromMeta(world.rand.nextInt(4)));
-				else if(ranDist <= s6)
-					world.setBlockState(pos, ModBlocks.sellafield_core.getStateFromMeta(world.rand.nextInt(4)));
+				world.setBlockState(pos, SELLAFIELD[tierIndex(l, true, 0, -1)].getStateFromMeta(world.rand.nextInt(4)));
+				return;
+			} else if(bblock == ModBlocks.sellafield_slaked || bblock == ModBlocks.sellafield_0 || bblock == ModBlocks.sellafield_1 || bblock == ModBlocks.sellafield_2 || bblock == ModBlocks.sellafield_3 || bblock == ModBlocks.sellafield_4 || bblock == ModBlocks.sellafield_core) {
+				int nt = tierIndex(l, true, 0, -1);
+				if(nt > Arrays.asList(SELLAFIELD).indexOf(bblock)) world.setBlockState(pos, SELLAFIELD[nt].getStateFromMeta(world.rand.nextInt(4)));
+				return;
+			} else if(META_TIERED.contains(bblock)) {
+				int m = tierIndex(l, false, 0, -1);
+				if(m > b.getBlock().getMetaFromState(b)) world.setBlockState(pos, bblock.getStateFromMeta(m));
 				return;
 
 			} else if(bblock == Blocks.BEDROCK || bblock == ModBlocks.ore_bedrock_oil || bblock == ModBlocks.ore_bedrock_block){
@@ -172,14 +169,29 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				}
 				continue;
 
+			} else if(bblock == Blocks.WATERLILY) {
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
+				continue;
+
 			} else if(bblock instanceof BlockBush) {
-				if(world.getBlockState(pos.down()).getBlock() == Blocks.FARMLAND){
+				IBlockState d = world.getBlockState(pos.down());
+				Block dblock = d.getBlock();
+				boolean canStay = dblock.canSustainPlant(d, world, pos.down(), EnumFacing.UP, (IPlantable) bblock);
+				if(!canStay){
+					world.setBlockState(pos, Blocks.AIR.getDefaultState());
+					continue;
+				}
+				if(dblock == Blocks.FARMLAND){
 					placeBlockFromDist(l, ModBlocks.waste_dirt, pos.down());
 					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
-				} else if(world.getBlockState(pos.down()).getBlock() instanceof BlockGrass){
+				} else if(dblock instanceof BlockGrass){
 					placeBlockFromDist(l, ModBlocks.waste_earth, pos.down());
 					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
-				} else if(world.getBlockState(pos.down()).getBlock() == Blocks.MYCELIUM){
+				} else if(dblock instanceof BlockDirt){
+					BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
+					placeBlockFromDist(l, meta == BlockDirt.DirtType.PODZOL ? ModBlocks.waste_mycelium : ModBlocks.waste_dirt, pos.down());
+					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
+				} else if(dblock == Blocks.MYCELIUM){
 					placeBlockFromDist(l, ModBlocks.waste_mycelium, pos.down());
 					world.setBlockState(pos, ModBlocks.mush.getDefaultState());
 				}
@@ -327,22 +339,34 @@ public class EntityFalloutUnderGround extends EntityChunky {
 		}
 	}
 
+	private static final Block[] SELLAFIELD = {
+		ModBlocks.sellafield_slaked, ModBlocks.sellafield_0, ModBlocks.sellafield_1,
+		ModBlocks.sellafield_2, ModBlocks.sellafield_3, ModBlocks.sellafield_4, ModBlocks.sellafield_core
+	};
+
+	private static final Set<Block> META_TIERED = new HashSet<>(Arrays.asList(
+			ModBlocks.fallout, ModBlocks.waste_earth, ModBlocks.waste_dirt,
+			ModBlocks.waste_gravel, ModBlocks.waste_snow, ModBlocks.waste_snow_block,
+			ModBlocks.waste_mycelium, ModBlocks.waste_sand, ModBlocks.waste_sand_red,
+			ModBlocks.waste_trinitite, ModBlocks.waste_trinitite_red,
+			ModBlocks.waste_sandstone, ModBlocks.waste_sandstone_red,
+			ModBlocks.waste_terracotta, ModBlocks.waste_grass_tall));
+
+		/** Maps a distance to a 0..6 tier index. sellafield=true uses the 0.1 jitter (meta uses 0.2); stoneDepth=0 with maxStoneDepth=-1 disables the depth term. */
+	private int tierIndex(double dist, boolean sellafield, int stoneDepth, int maxStoneDepth){
+		double spread = sellafield ? 0.1D : 0.2D;
+		double ranDist = dist * (1D + world.rand.nextDouble() * spread);
+		if(ranDist > s1 || stoneDepth == maxStoneDepth) return 0;
+		if(ranDist > s2 || stoneDepth == maxStoneDepth - 1) return 1;
+		if(ranDist > s3 || stoneDepth == maxStoneDepth - 2) return 2;
+		if(ranDist > s4 || stoneDepth == maxStoneDepth - 3) return 3;
+		if(ranDist > s5 || stoneDepth == maxStoneDepth - 4) return 4;
+		if(ranDist > s6 || stoneDepth == maxStoneDepth - 5) return 5;
+		return 6;
+	}
+
 	public void placeBlockFromDist(double dist, Block b, BlockPos pos){
-		double ranDist = dist * (1D + world.rand.nextDouble()*0.2);
-		if(ranDist > s1)
-			world.setBlockState(pos, b.getStateFromMeta(0));
-		else if(ranDist > s2)
-			world.setBlockState(pos, b.getStateFromMeta(1));
-		else if(ranDist > s3)
-			world.setBlockState(pos, b.getStateFromMeta(2));
-		else if(ranDist > s4)
-			world.setBlockState(pos, b.getStateFromMeta(3));
-		else if(ranDist > s5)
-			world.setBlockState(pos, b.getStateFromMeta(4));
-		else if(ranDist > s6)
-			world.setBlockState(pos, b.getStateFromMeta(5));
-		else if(ranDist <= s6)
-			world.setBlockState(pos, b.getStateFromMeta(6));
+		world.setBlockState(pos, b.getStateFromMeta(tierIndex(dist, false, 0, -1)));
 	}
 
 	private static boolean isOreDictMatch(Block block, String oreDictName) {

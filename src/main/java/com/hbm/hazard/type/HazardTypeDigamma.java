@@ -29,7 +29,7 @@ public class HazardTypeDigamma extends HazardTypeBase {
 		ItemStack stack = item.getItem();
 		float digs = level * stack.getCount();
 		float digPerTick = digs / 20F;
-		double range = Math.min(128, Math.sqrt(digs));
+		double range = Math.sqrt(digs);
 		ContaminationUtil.radiate(item.world, item.posX, item.posY, item.posZ, range, 0, digPerTick, 1.0D, null);
 	}
 

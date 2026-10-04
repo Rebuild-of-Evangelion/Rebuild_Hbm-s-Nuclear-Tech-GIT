@@ -1,6 +1,9 @@
 package com.hbm.util;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.base.Predicates;
 
 import com.hbm.capability.HbmLivingCapability.EntityHbmProps;
 import com.hbm.capability.HbmLivingCapability;
@@ -52,12 +55,15 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.client.util.ITooltipFlag;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
 
 public class ContaminationUtil {
 
@@ -518,6 +524,30 @@ public class ContaminationUtil {
 		return HbmLivingProps.getDigamma(entity);
 	}
 
+	/**
+	 * Spatial-indexed entity query: iterates only the loaded chunks (instead of the full chunk-coordinate
+	 * range that {@link World#getEntitiesWithinAABB} scans) and asks each intersecting chunk for its entities.
+	 * Avoids the O(range²) empty-chunk scan for large ranges. Falls back to the vanilla query on non-server worlds.
+	 */
+	public static List<Entity> getEntitiesWithinAABBIndexed(World world, AxisAlignedBB aabb) {
+		List<Entity> list = new ArrayList<>();
+		if (world == null || aabb == null) return list;
+		if (!(world.getChunkProvider() instanceof ChunkProviderServer)) {
+			return world.getEntitiesWithinAABB(Entity.class, aabb);
+		}
+		ChunkProviderServer cps = (ChunkProviderServer) world.getChunkProvider();
+		int minCX = MathHelper.floor((aabb.minX - 2.0D) / 16.0D);
+		int maxCX = MathHelper.floor((aabb.maxX + 2.0D) / 16.0D);
+		int minCZ = MathHelper.floor((aabb.minZ - 2.0D) / 16.0D);
+		int maxCZ = MathHelper.floor((aabb.maxZ + 2.0D) / 16.0D);
+		for (Chunk chunk : cps.loadedChunks.values()) {
+			if (chunk.x >= minCX && chunk.x <= maxCX && chunk.z >= minCZ && chunk.z <= maxCZ) {
+				chunk.getEntitiesWithinAABBForEntity(null, aabb, list, Predicates.<Entity>alwaysTrue());
+			}
+		}
+		return list;
+	}
+
 	public static void radiate(World world, double x, double y, double z, double range, float rad3d) {
 		radiate(world, x, y, z, range, rad3d, 0, 0, 0, 0);
 	}
@@ -539,8 +569,9 @@ public class ContaminationUtil {
 	}
 
 	public static void radiate(World world, double x, double y, double z, double range, float rad3d, float dig3d, float fire3d, float blast3d, double blastRange, double dmgLenMin, Entity exclude) {
-		List<Entity> entities = world.getEntitiesWithinAABB(Entity.class, new AxisAlignedBB(x-range, y-range, z-range, x+range, y+range, z+range));
+		List<Entity> entities = getEntitiesWithinAABBIndexed(world, new AxisAlignedBB(x-range, y-range, z-range, x+range, y+range, z+range));
 		double weatherFactor = getWeatherAttenuationFactor(world, x, y, z);
+		ChunkProviderServer cps = world.getChunkProvider() instanceof ChunkProviderServer ? (ChunkProviderServer) world.getChunkProvider() : null;
 
 		for(Entity e : entities) {
 			if(isExplosionExempt(e) || e == exclude) continue;
@@ -559,11 +590,13 @@ public class ContaminationUtil {
 			float res = 0;
 
 			for(int i = 1; i < len; i++) {
-
 				int ix = (int)Math.floor(x + vec.xCoord * i);
 				int iy = (int)Math.floor(y + vec.yCoord * i);
 				int iz = (int)Math.floor(z + vec.zCoord * i);
-				res += world.getBlockState(new BlockPos(ix, iy, iz)).getBlock().getExplosionResistance(null);
+				if(iy < 0 || iy > 255) continue;
+				Chunk chunk = cps != null ? cps.getLoadedChunk(ix >> 4, iz >> 4) : null;
+				if(chunk == null) continue;
+				res += chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
 

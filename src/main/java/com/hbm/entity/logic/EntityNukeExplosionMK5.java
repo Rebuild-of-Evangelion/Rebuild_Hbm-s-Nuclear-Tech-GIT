@@ -14,6 +14,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumHand;
 import net.minecraft.world.biome.*;
 
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
 import org.apache.logging.log4j.Level;
 
 import com.hbm.config.BombConfig;
@@ -87,8 +89,7 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 			}
 		}
 
-		double weatherFactor = ContaminationUtil.getWeatherAttenuationFactor(world, this.posX, this.posY, this.posZ);
-		dealDamage(world, this.posX, this.posY, this.posZ, this.radius * 2.0F, weatherFactor);
+		dealDamage(world, this.posX, this.posY, this.posZ, this.radius * 2.0F);
 
 		//make some noise
 		if(!mute) {
@@ -153,8 +154,10 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 		}
 	}
 
-	public void dealDamage(World world, double x, double y, double z, double radius, double weatherFactor) {
-		List<Entity> entities = world.getEntitiesWithinAABB(Entity.class, new AxisAlignedBB(x-radius, y-radius, z-radius, x+radius, y+radius, z+radius));
+	public void dealDamage(World world, double x, double y, double z, double radius) {
+		List<Entity> entities = ContaminationUtil.getEntitiesWithinAABBIndexed(world, new AxisAlignedBB(x-radius, y-radius, z-radius, x+radius, y+radius, z+radius));
+		double weatherFactor = ContaminationUtil.getWeatherAttenuationFactor(world, x, y, z);
+		ChunkProviderServer cps = world.getChunkProvider() instanceof ChunkProviderServer ? (ChunkProviderServer) world.getChunkProvider() : null;
 
 		float dmgScale = 1.0F;
 		if (this.radius <= 25) dmgScale /= 0.65F;
@@ -179,7 +182,10 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				int ix = (int)Math.floor(x + vec.xCoord * i);
 				int iy = (int)Math.floor(y + vec.yCoord * i);
 				int iz = (int)Math.floor(z + vec.zCoord * i);
-				res += world.getBlockState(new BlockPos(ix, iy, iz)).getBlock().getExplosionResistance(null);
+				if(iy < 0 || iy > 255) continue;
+				Chunk chunk = cps != null ? cps.getLoadedChunk(ix >> 4, iz >> 4) : null;
+				if(chunk == null) continue;
+				res += chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
 

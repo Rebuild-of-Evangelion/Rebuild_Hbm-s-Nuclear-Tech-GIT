@@ -454,8 +454,8 @@ public class EntityEffectHandler {
 
 		float radPerTick = totalRad / 20F;
 		float digPerTick = totalDig / 20F;
-		double radRange = Math.min(128, Math.sqrt(totalRad));
-		double digRange = Math.min(128, Math.sqrt(totalDig));
+		double radRange = Math.sqrt(totalRad);
+		double digRange = Math.sqrt(totalDig);
 
 		ContaminationUtil.radiate(entity.world, entity.posX, entity.posY + entity.height / 2, entity.posZ, radRange, radPerTick, 0, 1.0D, entity);
 		ContaminationUtil.radiate(entity.world, entity.posX, entity.posY + entity.height / 2, entity.posZ, digRange, 0, digPerTick, 1.0D, entity);

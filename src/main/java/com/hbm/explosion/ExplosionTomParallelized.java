@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.ThreadLocalRandom;
@@ -159,14 +158,9 @@ public class ExplosionTomParallelized implements IExplosionRay, BombForkJoinPool
 		int cr = (radius + 15) >> 4;
 		int minCX = (originX >> 4) - cr, maxCX = (originX >> 4) + cr;
 		int minCZ = (originZ >> 4) - cr, maxCZ = (originZ >> 4) + cr;
-		ChunkProviderServer cps = (ChunkProviderServer) world.getChunkProvider();
 		for (int cx = maxCX + 2; cx >= minCX - 2; cx--) {
 			for (int cz = maxCZ + 2; cz >= minCZ - 2; cz--) {
-				long cp = ChunkPos.asLong(cx, cz);
-				Chunk c = cps.loadedChunks.get(cp);
-				if (c == null || !c.isTerrainPopulated()) {
-					chunkLoadQueue.offer(cp);
-				}
+				chunkLoadQueue.offer(ChunkPos.asLong(cx, cz));
 			}
 		}
 

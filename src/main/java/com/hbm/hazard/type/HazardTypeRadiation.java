@@ -49,7 +49,7 @@ public class HazardTypeRadiation extends HazardTypeBase {
 		ItemStack stack = item.getItem();
 		float rads = level * stack.getCount();
 		float radPerTick = rads / 20F;
-		double range = Math.sqrt(rads);
+		double range = Math.min(Math.sqrt(rads), 1000);
 		float envFactor = 0.00004F;
 		float envThreshold = RadiationConfig.neutronActivationThreshold;
 		float envRadPerTick = rads * envFactor - envThreshold * envFactor;

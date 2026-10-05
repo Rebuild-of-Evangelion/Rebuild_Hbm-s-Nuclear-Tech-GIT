@@ -294,17 +294,13 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
         }
         prepareResumeState(allChunks);
 
-        // Enqueue the not-yet-fully-populated chunks of the radius + 2-chunk margin so the vanilla
-        // decoration cascade (a tree placed by a neighbour's populate whose body crosses into this
-        // chunk) finishes before this chunk is column-scanned. Already-populated chunks are skipped.
-        ChunkProviderServer cps = (ChunkProviderServer) world.getChunkProvider();
+        // Enqueue every chunk of the radius + 2-chunk margin through loadChunk so it is populated,
+        // mirrored and offered to the workers uniformly. loadChunk skips populate for already-populated
+        // chunks (correct), but still mirrors them and adds them to populatedChunks, so both the overlap
+        // case and the decoration cascade are handled.
         for (int cx = maxCX + 2; cx >= minCX - 2; cx--) {
             for (int cz = maxCZ + 2; cz >= minCZ - 2; cz--) {
-                long cp = ChunkPos.asLong(cx, cz);
-                Chunk c = cps.loadedChunks.get(cp);
-                if (c == null || !c.isTerrainPopulated()) {
-                    chunkLoadQueue.offer(cp);
-                }
+                chunkLoadQueue.offer(ChunkPos.asLong(cx, cz));
             }
         }
 
@@ -499,15 +495,17 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
         Int2ObjectOpenHashMap<IBlockState>[] buckets = new Int2ObjectOpenHashMap[16];
         int selfMask = 0;
         Long2ObjectOpenHashMap<IBlockState> oldStates = new Long2ObjectOpenHashMap<>();
-        for (Map.Entry<Long, IBlockState> e : changes.entrySet()) {
-            long packed = e.getKey().longValue();
-            int x = Library.getBlockPosX(packed);
-            int y = Library.getBlockPosY(packed);
-            int z = Library.getBlockPosZ(packed);
-            int subY = y >> 4;
-            if (subY < 0 || subY >= 16) continue;
-            if (buckets[subY] == null) buckets[subY] = new Int2ObjectOpenHashMap<>();
-            buckets[subY].put(Library.packLocal(x & 15, y & 15, z & 15), e.getValue());
+        if (hasChanges) {
+            for (Map.Entry<Long, IBlockState> e : changes.entrySet()) {
+                long packed = e.getKey().longValue();
+                int x = Library.getBlockPosX(packed);
+                int y = Library.getBlockPosY(packed);
+                int z = Library.getBlockPosZ(packed);
+                int subY = y >> 4;
+                if (subY < 0 || subY >= 16) continue;
+                if (buckets[subY] == null) buckets[subY] = new Int2ObjectOpenHashMap<>();
+                buckets[subY].put(Library.packLocal(x & 15, y & 15, z & 15), e.getValue());
+            }
         }
         for (int subY = 0; subY < 16; subY++) {
             Int2ObjectOpenHashMap<IBlockState> bucket = buckets[subY];

@@ -1406,7 +1406,7 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
                 if (clipAtRadius) segLen = remaining;
 
                 if (state.getBlock() != Blocks.AIR) {
-                    segLen = Math.max(segLen, 1.0);   // voxel corner: treat the zero-length pass as a full block
+                    if (segLen <= PROCESSING_EPSILON) segLen = 1.0;   // voxel corner: treat the zero-length pass as a full block
                     float resistance = getNukeResistance(state);
                     if (resistance >= NUKE_RESISTANCE_CUTOFF) {
                         energy = 0;

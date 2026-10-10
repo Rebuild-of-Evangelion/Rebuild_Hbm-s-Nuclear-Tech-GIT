@@ -14,7 +14,6 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -169,15 +168,11 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				}
 				continue;
 
-			} else if(bblock == Blocks.WATERLILY) {
-				world.setBlockState(pos, Blocks.AIR.getDefaultState());
-				continue;
-
 			} else if(bblock instanceof BlockBush) {
 				IBlockState d = world.getBlockState(pos.down());
 				Block dblock = d.getBlock();
 				boolean canStay = dblock.canSustainPlant(d, world, pos.down(), EnumFacing.UP, (IPlantable) bblock);
-				if(!canStay){
+				if(!canStay || bblock instanceof BlockLilyPad){
 					world.setBlockState(pos, Blocks.AIR.getDefaultState());
 					continue;
 				}
@@ -195,6 +190,14 @@ public class EntityFalloutUnderGround extends EntityChunky {
 					placeBlockFromDist(l, ModBlocks.waste_mycelium, pos.down());
 					world.setBlockState(pos, ModBlocks.mush.getDefaultState());
 				}
+				continue;
+
+			} else if(bblock instanceof BlockCactus) {
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
+				continue;
+
+			} else if(bblock instanceof BlockReed) {
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
 				continue;
 
 			} else if(bblock instanceof BlockGrass) {
@@ -259,12 +262,26 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				world.setBlockState(pos, Blocks.COAL_ORE.getDefaultState());
 				return;
 
-			} else if(bblock == Blocks.COAL_ORE || isOreDictMatch(bblock, "oreCoal")) {
+			} else if(bblock == Blocks.COAL_ORE || matchesOre(bblock, "oreCoal")) {
 				if(l < s6){
 					int ra = rand.nextInt(150);
 					if(ra < 7) {
 						world.setBlockState(pos, Blocks.DIAMOND_ORE.getDefaultState());
 					} else if(ra < 10) {
+						world.setBlockState(pos, Blocks.EMERALD_ORE.getDefaultState());
+					}
+				}
+				return;
+			} else if(bblock == ModBlocks.ore_lignite || matchesOre(bblock, "oreLignite")) {
+				if(l < s6){
+					if(rand.nextInt(150) < 7) {
+						world.setBlockState(pos, Blocks.DIAMOND_ORE.getDefaultState());
+					}
+				}
+				return;
+			} else if(bblock == ModBlocks.ore_beryllium || matchesOre(bblock, "oreBeryllium")) {
+				if(l < s6){
+					if(rand.nextInt(150) < 10) {
 						world.setBlockState(pos, Blocks.EMERALD_ORE.getDefaultState());
 					}
 				}
@@ -302,7 +319,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				world.setBlockToAir(pos);
 				continue;
 
-			} else if(bblock == ModBlocks.ore_uranium || isOreDictMatch(bblock, "oreUranium")) {
+			} else if(bblock == ModBlocks.ore_uranium || matchesOre(bblock, "oreUranium")) {
 				if(l <= s6){
 					if (rand.nextInt((int)(1+VersatileConfig.getSchrabOreChance())) == 0 || l < s7)
 						world.setBlockState(pos, ModBlocks.ore_schrabidium.getDefaultState());
@@ -311,7 +328,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				}
 				return;
 
-		} else if(bblock == ModBlocks.ore_nether_uranium || isOreDictMatch(bblock, "oreNetherUranium")) {
+		} else if(bblock == ModBlocks.ore_nether_uranium || matchesOre(bblock, "oreNetherUranium")) {
 				if(l <= s5){
 					if(rand.nextInt((int)(1+VersatileConfig.getSchrabOreChance())) == 0)
 						world.setBlockState(pos, ModBlocks.ore_nether_schrabidium.getDefaultState());
@@ -320,7 +337,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				}
 				return;
 
-		} else if(bblock == ModBlocks.ore_gneiss_uranium || isOreDictMatch(bblock, "oreNetherUranium")) {
+		} else if(bblock == ModBlocks.ore_gneiss_uranium || matchesOre(bblock, "oreNetherUranium")) {
 				if(l <= s4){
 					if(rand.nextInt((int)(1+VersatileConfig.getSchrabOreChance()/2)) == 0)
 						world.setBlockState(pos, ModBlocks.ore_gneiss_schrabidium.getDefaultState());
@@ -369,13 +386,8 @@ public class EntityFalloutUnderGround extends EntityChunky {
 		world.setBlockState(pos, b.getStateFromMeta(tierIndex(dist, false, 0, -1)));
 	}
 
-	private static boolean isOreDictMatch(Block block, String oreDictName) {
-		for (ItemStack stack : OreDictionary.getOres(oreDictName)) {
-			if (!stack.isEmpty() && stack.getItem() == Item.getItemFromBlock(block)) {
-				return true;
-			}
-		}
-		return false;
+	private static boolean matchesOre(Block block, String oreDictName) {
+		return OreDictionary.containsMatch(false, OreDictionary.getOres(oreDictName), new ItemStack(block));
 	}
 
 	@Override

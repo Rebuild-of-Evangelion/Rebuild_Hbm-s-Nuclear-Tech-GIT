@@ -54,7 +54,7 @@ public class ExplosionNukeGeneric {
 	private final static Random random = new Random();
 
 	private static boolean matchesOre(Block block, String oreDictName) {
-		return OreDictionary.containsMatch(false, OreDictionary.getOres(oreDictName), new ItemStack(block));
+		return OreDictionary.containsMatch(false, OreDictionary.getOres(oreDictName), new ItemStack(block, 1, OreDictionary.WILDCARD_VALUE));
 	}
 	
 	public static void empBlast(World world, int x, int y, int z, int bombStartStrength) {

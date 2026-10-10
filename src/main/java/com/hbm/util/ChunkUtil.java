@@ -12,9 +12,7 @@ import com.hbm.main.MainRegistry;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongCollection;
-import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -26,6 +24,7 @@ import net.minecraft.util.BitArray;
 import net.minecraft.util.IntIdentityHashBiMap;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.BlockStateContainer;
@@ -482,87 +481,283 @@ public final class ChunkUtil {
         return Optional.of(dst);
     }
 
-    /**
-     * Chunk-local horizontal skylight propagation. {@code World.checkLight} is a no-op for freshly
-     * loaded chunks whose neighbour chunks are not yet loaded (its {@code isAreaLoaded(pos, 16)}
-     * guard fails), so we relax the skyLight in place: skyLight = max(neighbour skyLight - opacity).
-     */
-    private static final int[] SKY_DX = { 0, 0, 0, 0, -1, 1 };
-    private static final int[] SKY_DY = { 1, -1, 0, 0, 0, 0 };
-    private static final int[] SKY_DZ = { 0, 0, -1, 1, 0, 0 };
+    /** 6-direction offsets for light propagation (y first = up/down). */
+    private static final int[] DX = { 0, 0, 0, 0, -1, 1 };
+    private static final int[] DY = { 1, -1, 0, 0, 0, 0 };
+    private static final int[] DZ = { 0, 0, -1, 1, 0, 0 };
 
     /**
-     * BFS flood-fill of skylight from the sky-lit air (skylight 15, produced by
-     * generateSkylightMap) through the whole connected transparent space. Unlike a fixed-pass
-     * diffusion this reaches around corners and into connected-but-hidden cave/ravine spaces and
-     * concave walls in O(n), giving the same result as vanilla checkLight for the skylight channel.
-     * Positions are packed as (y & 255) | (x & 15) << 8 | (z & 15) << 12.
+     * Relight a chunk on its final block states: vertical skylight (vanilla generateSkylightMap),
+     * then horizontal skylight and block-light flood-fills across the 3x3 chunk window so light
+     * propagates across chunk boundaries. Faithful to vanilla's light engine; self-contained (reads
+     * neighbour block states from the loaded-chunk map, writes only this chunk).
      */
-    public static void propagateSkylightLocal(Chunk chunk) {
-        ExtendedBlockStorage[] storages = chunk.getBlockStorageArray();
+    public static void relightChunk(Chunk chunk) {
+        chunk.generateSkylightMap();
+        LightWindow win = new LightWindow(chunk);
+        propagateSkylight(win);
+        propagateBlockLight(win);
+        // NOTE: do NOT call chunk.resetRelightChecks() here. resetRelightChecks() sets
+        // queuedLightChecks back to 0, which re-arms the vanilla per-tick enqueueRelightChecks()
+        // round-robin (WorldServer.updateBlocks -> chunk.enqueueRelightChecks). That round-robin
+        // calls world.checkLight() on every air block, re-propagating the stale block light we just
+        // cleared. Leaving queuedLightChecks at its "done" value (4096) keeps the vanilla pass off.
+    }
+
+    /** Returns a mask of the sub-chunks that currently hold any non-zero block light. */
+    public static int blockLightMask(Chunk chunk) {
+        int mask = 0;
+        ExtendedBlockStorage[] arr = chunk.getBlockStorageArray();
+        for (int gy = 0; gy < 16; gy++) {
+            ExtendedBlockStorage s = arr[gy];
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE) continue;
+            NibbleArray bl = s.getBlockLight();
+            if (bl == null) continue;
+            for (byte b : bl.getData()) {
+                if (b != 0) {
+                    mask |= 1 << gy;
+                    break;
+                }
+            }
+        }
+        return mask;
+    }
+
+    /** Localized block-light recompute around a moved light source, using vanilla Manhattan (octahedron) reach. */
+    public static void relightLocal(World world, int gx, int gy, int gz, int light) {
+        if (light <= 0) return;
+        int readR = light + 15;
+        int size = readR * 2 + 1;
+        int plane = size * size;
+        byte[] work = new byte[size * size * size];
         int[] queue = new int[4096];
-        int head = 0;
-        int tail = 0;
-
-        // Seed with every block that is already fully sky-lit.
-        for (int subY = 0; subY < 16; subY++) {
-            ExtendedBlockStorage s = storages[subY];
-            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) continue;
-            int baseY = subY << 4;
-            for (int y = 0; y < 16; y++) {
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        if (s.getSkyLight(x, y, z) >= 15) {
-                            if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
-                            queue[tail++] = (baseY + y) | (x << 8) | (z << 12);
-                        }
+        int head = 0, tail = 0;
+        BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
+        for (int dx = -readR; dx <= readR; dx++) {
+            for (int dz = -readR; dz <= readR; dz++) {
+                int adxz = Math.abs(dx) + Math.abs(dz);
+                for (int dy = -readR; dy <= readR; dy++) {
+                    if (adxz + Math.abs(dy) > readR) continue;
+                    int wy = gy + dy;
+                    if (wy < 0 || wy >= 256) continue;
+                    IBlockState st = world.getBlockState(mp.setPos(gx + dx, wy, gz + dz));
+                    int emit = st.getBlock().getLightValue(st);
+                    if (emit > 0) {
+                        int idx = (dx + readR) * plane + (dy + readR) * size + (dz + readR);
+                        work[idx] = (byte) emit;
+                        if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
+                        queue[tail++] = idx;
                     }
                 }
             }
         }
         while (head < tail) {
-            int packed = queue[head++];
-            int x = (packed >> 8) & 15;
-            int y = packed & 255;
-            int z = (packed >> 12) & 15;
-            int light = getSky(storages, x, y, z);
-            if (light <= 1) continue;
-
+            int idx = queue[head++];
+            int lv = work[idx] & 0xFF;
+            if (lv <= 1) continue;
+            int dz = (idx % size) - readR;
+            int dy = ((idx / size) % size) - readR;
+            int dx = (idx / plane) - readR;
             for (int d = 0; d < 6; d++) {
-                int nx = x + SKY_DX[d];
-                int ny = y + SKY_DY[d];
-                int nz = z + SKY_DZ[d];
-                if (nx < 0 || nx > 15 || nz < 0 || nz > 15 || ny < 0 || ny > 255) continue;
-                int nsubY = ny >> 4;
-                ExtendedBlockStorage ns = storages[nsubY];
-                if (ns == null || ns == Chunk.NULL_BLOCK_STORAGE || ns.isEmpty()) continue;
-                int opacity = ns.get(nx, ny & 15, nz).getLightOpacity();
-                if (opacity >= 15) continue; // opaque neighbour blocks skylight
-                int newLight = light - Math.max(1, opacity); // air still costs 1, like vanilla
-                if (newLight > ns.getSkyLight(nx, ny & 15, nz)) {
-                    ns.setSkyLight(nx, ny & 15, nz, newLight);
+                int ndx = dx + DX[d], ndy = dy + DY[d], ndz = dz + DZ[d];
+                if (Math.abs(ndx) + Math.abs(ndy) + Math.abs(ndz) > readR) continue;
+                int wy = gy + ndy;
+                if (wy < 0 || wy >= 256) continue;
+                IBlockState st = world.getBlockState(mp.setPos(gx + ndx, wy, gz + ndz));
+                int opacity = st.getBlock().getLightOpacity(st);
+                if (opacity >= 15) continue;
+                int newLight = lv - Math.max(1, opacity);
+                int nidx = (ndx + readR) * plane + (ndy + readR) * size + (ndz + readR);
+                if (newLight > (work[nidx] & 0xFF)) {
+                    work[nidx] = (byte) newLight;
                     if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
-                    queue[tail++] = ny | (nx << 8) | (nz << 12);
+                    queue[tail++] = nidx;
+                }
+            }
+        }
+        for (int dx = -light; dx <= light; dx++) {
+            for (int dz = -light; dz <= light; dz++) {
+                int adxz = Math.abs(dx) + Math.abs(dz);
+                for (int dy = -light; dy <= light; dy++) {
+                    if (adxz + Math.abs(dy) > light) continue;
+                    int wy = gy + dy;
+                    if (wy < 0 || wy >= 256) continue;
+                    int idx = (dx + readR) * plane + (dy + readR) * size + (dz + readR);
+                    mp.setPos(gx + dx, wy, gz + dz);
+                    if (world.isBlockLoaded(mp, false)) {
+                        world.setLightFor(EnumSkyBlock.BLOCK, mp, work[idx] & 0xFF);
+                    }
                 }
             }
         }
     }
 
-    private static int getSky(ExtendedBlockStorage[] storages, int x, int y, int z) {
-        if (y < 0 || y > 255) return 0;
-        ExtendedBlockStorage s = storages[y >> 4];
-        if (s == null || s == Chunk.NULL_BLOCK_STORAGE) return 0;
-        return s.getSkyLight(x, y & 15, z);
+    private static void propagateSkylight(LightWindow win) {
+        int minX = (win.cx - 1) << 4, minZ = (win.cz - 1) << 4;
+        int[] queue = new int[4096];
+        int head = 0, tail = 0;
+
+        // Seed with every sky-lit air block (skylight 15) in the whole window.
+        for (int lx = 0; lx < 48; lx++) {
+            for (int lz = 0; lz < 48; lz++) {
+                for (int y = 0; y < 256; y++) {
+                    if (win.skyLight(minX + lx, y, minZ + lz) >= 15) {
+                        if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
+                        queue[tail++] = lx | (y << 6) | (lz << 14);
+                    }
+                }
+            }
+        }
+
+        while (head < tail) {
+            int packed = queue[head++];
+            int lx = packed & 63, y = (packed >>> 6) & 255, lz = (packed >>> 14) & 63;
+            int light = win.skyLight(minX + lx, y, minZ + lz);
+            if (light <= 1) continue;
+            for (int d = 0; d < 6; d++) {
+                int nx = lx + DX[d], ny = y + DY[d], nz = lz + DZ[d];
+                if (nx < 0 || nx >= 48 || nz < 0 || nz >= 48 || ny < 0 || ny >= 256) continue;
+                int gx = minX + nx, gz = minZ + nz;
+                int opacity = win.opacity(gx, ny, gz);
+                if (opacity >= 15) continue;
+                int newLight = light - Math.max(1, opacity);
+                if (newLight > win.skyLight(gx, ny, gz)) {
+                    win.setSkyLight(gx, ny, gz, newLight);
+                    if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
+                    queue[tail++] = nx | (ny << 6) | (nz << 14);
+                }
+            }
+        }
     }
 
-    /**
-     * Unified skylight recompute for a chunk whose blocks are now final: recompute the vertical
-     * skylight (generateSkylightMap) then flood-fill it horizontally into caves/ravines/concave
-     * walls (propagateSkylightLocal). Call this exactly once per chunk, after the block edits.
-     */
-    public static void recomputeSkylight(Chunk chunk) {
-        chunk.generateSkylightMap();
-        propagateSkylightLocal(chunk);
+    private static void propagateBlockLight(LightWindow win) {
+        int minX = (win.cx - 1) << 4, minZ = (win.cz - 1) << 4;
+
+        // Zero the centre chunk's block light (the write-back below only sets non-zero values).
+        for (ExtendedBlockStorage s : win.center) {
+            if (s != null && s != Chunk.NULL_BLOCK_STORAGE) {
+                NibbleArray bl = s.getBlockLight();
+                if (bl != null) Arrays.fill(bl.getData(), (byte) 0);
+            }
+        }
+
+        // Work array over the 3x3 window. Seeded from block states only, so it never reads a
+        // neighbour's stale block light and is independent of relight order.
+        byte[] light = new byte[48 * 256 * 48];
+        int[] queue = new int[4096];
+        int head = 0, tail = 0;
+
+        for (int lx = 0; lx < 48; lx++) {
+            for (int lz = 0; lz < 48; lz++) {
+                for (int y = 0; y < 256; y++) {
+                    int emit = win.lightValue(minX + lx, y, minZ + lz);
+                    if (emit > 0) {
+                        light[(lx * 256 + y) * 48 + lz] = (byte) emit;
+                        if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
+                        queue[tail++] = lx | (y << 6) | (lz << 14);
+                    }
+                }
+            }
+        }
+
+        while (head < tail) {
+            int packed = queue[head++];
+            int lx = packed & 63, y = (packed >>> 6) & 255, lz = (packed >>> 14) & 63;
+            int lv = light[(lx * 256 + y) * 48 + lz] & 0xFF;
+            if (lv <= 1) continue;
+            for (int d = 0; d < 6; d++) {
+                int nx = lx + DX[d], ny = y + DY[d], nz = lz + DZ[d];
+                if (nx < 0 || nx >= 48 || nz < 0 || nz >= 48 || ny < 0 || ny >= 256) continue;
+                int gx = minX + nx, gz = minZ + nz;
+                int opacity = win.opacity(gx, ny, gz);
+                if (opacity >= 15) continue;
+                int newLight = lv - Math.max(1, opacity);
+                int nidx = (nx * 256 + ny) * 48 + nz;
+                if (newLight > (light[nidx] & 0xFF)) {
+                    light[nidx] = (byte) newLight;
+                    if (tail == queue.length) queue = Arrays.copyOf(queue, queue.length << 1);
+                    queue[tail++] = nx | (ny << 6) | (nz << 14);
+                }
+            }
+        }
+
+        // Write the centre chunk's portion (local x/z 16..31) back.
+        for (int lx = 16; lx < 32; lx++) {
+            for (int lz = 16; lz < 32; lz++) {
+                for (int y = 0; y < 256; y++) {
+                    int lv = light[(lx * 256 + y) * 48 + lz] & 0xFF;
+                    if (lv > 0) win.setBlockLight(minX + lx, y, minZ + lz, lv);
+                }
+            }
+        }
+    }
+
+    /** 3x3 chunk window (centre + 8 loaded neighbours) for cross-chunk light propagation. */
+    private static final class LightWindow {
+        final int cx, cz;
+        final ExtendedBlockStorage[][] ebs;
+        final ExtendedBlockStorage[] center;
+
+        LightWindow(Chunk centerChunk) {
+            this.cx = centerChunk.x;
+            this.cz = centerChunk.z;
+            this.ebs = new ExtendedBlockStorage[9][];
+            this.center = centerChunk.getBlockStorageArray();
+            World world = centerChunk.getWorld();
+            Map<Long, Chunk> loaded = null;
+            if (world instanceof WorldServer) {
+                ConcurrentHashMap<Long, Chunk> mirror = chunkMap.get(world.provider.getDimension());
+                loaded = mirror != null ? mirror : ((WorldServer) world).getChunkProvider().loadedChunks;
+            }
+            int i = 0;
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    Chunk c = (dx == 0 && dz == 0) ? centerChunk
+                            : (loaded != null ? getLoadedChunk(loaded, ChunkPos.asLong(cx + dx, cz + dz)) : null);
+                    ebs[i++] = c == null ? null : c.getBlockStorageArray();
+                }
+            }
+        }
+
+        private ExtendedBlockStorage storage(int gx, int gy, int gz) {
+            int dx = (gx >> 4) - cx, dz = (gz >> 4) - cz;
+            if (dx < -1 || dx > 1 || dz < -1 || dz > 1 || gy < 0 || gy >= 256) return null;
+            ExtendedBlockStorage[] arr = ebs[(dz + 1) * 3 + (dx + 1)];
+            return arr == null ? null : arr[gy >> 4];
+        }
+
+        int opacity(int gx, int gy, int gz) {
+            ExtendedBlockStorage s = storage(gx, gy, gz);
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) return 0;
+            return s.get(gx & 15, gy & 15, gz & 15).getLightOpacity();
+        }
+
+        int lightValue(int gx, int gy, int gz) {
+            ExtendedBlockStorage s = storage(gx, gy, gz);
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) return 0;
+            IBlockState st = s.get(gx & 15, gy & 15, gz & 15);
+            return st.getBlock().getLightValue(st);
+        }
+
+        int skyLight(int gx, int gy, int gz) {
+            ExtendedBlockStorage s = storage(gx, gy, gz);
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) return 0;
+            return s.getSkyLight(gx & 15, gy & 15, gz & 15);
+        }
+
+        void setSkyLight(int gx, int gy, int gz, int value) {
+            if ((gx >> 4) != cx || (gz >> 4) != cz || gy < 0 || gy >= 256) return;
+            ExtendedBlockStorage s = center[gy >> 4];
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) return;
+            s.setSkyLight(gx & 15, gy & 15, gz & 15, value);
+        }
+
+        void setBlockLight(int gx, int gy, int gz, int value) {
+            if ((gx >> 4) != cx || (gz >> 4) != cz || gy < 0 || gy >= 256) return;
+            ExtendedBlockStorage s = center[gy >> 4];
+            if (s == null || s == Chunk.NULL_BLOCK_STORAGE || s.isEmpty()) return;
+            s.setBlockLight(gx & 15, gy & 15, gz & 15, value);
+        }
     }
 
     /** Lazy neighbor storage cache for edge-contact checks while carving. */

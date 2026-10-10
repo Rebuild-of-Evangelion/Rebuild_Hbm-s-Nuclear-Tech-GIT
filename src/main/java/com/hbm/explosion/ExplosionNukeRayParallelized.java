@@ -113,6 +113,7 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
     static final long OFF_POOL_ACQUIRED = fieldOffset(ExplosionNukeRayParallelized.class, "poolAcquired");
     static final long OFF_JOB_REGISTERED = fieldOffset(ExplosionNukeRayParallelized.class, "jobRegistered");
     static final long OFF_CANCEL_CLEANUP = fieldOffset(ExplosionNukeRayParallelized.class, "cancelCleanup");
+    static final long OFF_RELIGHT_QUEUED = fieldOffset(ExplosionNukeRayParallelized.class, "relightQueued");
 
     static {
         for (int r = 0; r < LUT_RESISTANCE_BINS; r++) {
@@ -152,7 +153,7 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
     int jobDimension = Integer.MIN_VALUE;
 
     volatile int mapAcquired, consolidationStarted, finishQueued, pendingRays, activeWorkerTasks,
-            collectFinished, consolidationFinished, destroyFinished, poolAcquired, jobRegistered, cancelCleanup;
+            collectFinished, consolidationFinished, destroyFinished, poolAcquired, jobRegistered, cancelCleanup, relightQueued;
     volatile boolean cancelling;
 
     volatile boolean isContained = true;
@@ -662,8 +663,6 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
             long cp = e.getLongKey();
             Chunk chunk = loaded.get(cp);
             if (chunk == null) continue;
-            ChunkUtil.recomputeSkylight(chunk);
-            chunk.resetRelightChecks();
             chunk.markDirty();
             PlayerChunkMapEntry entry = playerChunkMap.getEntry(Library.getChunkPosX(cp), Library.getChunkPosZ(cp));
             if (entry != null) {
@@ -902,6 +901,10 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
         if (activeWorkerTasks != 0 || !pendingCarves.isEmpty()) return;
         if (!waitingRoom.isEmpty()) return;
         if (!postLoadQueues.isEmpty()) return;
+        if (U.compareAndSetInt(this, OFF_RELIGHT_QUEUED, 0, 1)) {
+            submitRelight();
+        }
+        if (activeWorkerTasks != 0) return;
         if (!U.compareAndSetInt(this, OFF_FINISH_QUEUED, 0, 1)) return;
         world.addScheduledTask(() -> {
             secondPass();
@@ -911,6 +914,64 @@ public class ExplosionNukeRayParallelized implements IExplosionRay, BombForkJoin
                 ChunkUtil.releaseMirrorMap(world);
             }
         });
+    }
+
+    void submitRelight() {
+        LongArrayList list = new LongArrayList(sectionMaskByChunk.size());
+        ObjectIterator<Long2IntMap.Entry> it = sectionMaskByChunk.long2IntEntrySet().fastIterator();
+        while (it.hasNext()) {
+            Long2IntMap.Entry e = it.next();
+            if (e.getIntValue() != 0) list.add(e.getLongKey());
+        }
+        if (list.isEmpty()) return;
+        long[] raw = list.toLongArray();
+        Long[] keys = new Long[raw.length];
+        for (int i = 0; i < raw.length; i++) keys[i] = Long.valueOf(raw[i]);
+        ForkJoinPool p = pool;
+        if (p == null || p.isShutdown()) {
+            Long2ObjectMap<Chunk> loaded = world.getChunkProvider().loadedChunks;
+            for (Long k : keys) {
+                Chunk c = loaded.get(k.longValue());
+                if (c != null) ChunkUtil.relightChunk(c);
+            }
+            return;
+        }
+        U.getAndAddInt(this, OFF_ACTIVE_WORKER_TASKS, 1);
+        p.submit(() -> {
+            try {
+                new RelightTask(keys, 0, keys.length, computeTaskGrain(keys.length, 64)).invoke();
+            } finally {
+                workerFinished();
+            }
+        });
+    }
+
+    final class RelightTask extends RecursiveAction {
+        final Long[] keys;
+        final int start, end, threshold;
+
+        RelightTask(Long[] keys, int start, int end, int threshold) {
+            this.keys = keys;
+            this.start = start;
+            this.end = end;
+            this.threshold = Math.max(1, threshold);
+        }
+
+        @Override
+        protected void compute() {
+            int len = end - start;
+            if (len <= threshold) {
+                for (int i = start; i < end; i++) {
+                    if (Thread.currentThread().isInterrupted() || destroyFinished != 0) break;
+                    long cp = keys[i].longValue();
+                    Chunk c = ChunkUtil.getLoadedChunk(mirror, cp);
+                    if (c != null) ChunkUtil.relightChunk(c);
+                }
+            } else {
+                int mid = start + (len >>> 1);
+                invokeAll(new RelightTask(keys, start, mid, threshold), new RelightTask(keys, mid, end, threshold));
+            }
+        }
     }
 
     void prepareAndEnqueue(long cpLong, Int2ObjectOpenHashMap<BitMask> masks) {

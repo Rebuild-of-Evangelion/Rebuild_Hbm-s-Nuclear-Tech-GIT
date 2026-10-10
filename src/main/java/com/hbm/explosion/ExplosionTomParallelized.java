@@ -638,7 +638,7 @@ public class ExplosionTomParallelized implements IExplosionRay, BombForkJoinPool
 		applyBiomeToChunk(chunk, cx, cz);
 		if (selfMask != 0) {
 			sectionMaskByChunk.put(cpLong, sectionMaskByChunk.get(cpLong) | selfMask);
-			ChunkUtil.recomputeSkylight(chunk);
+			ChunkUtil.relightChunk(chunk);
 			chunk.markDirty();
 			net.minecraft.server.management.PlayerChunkMapEntry entry = world.getPlayerChunkMap().getEntry(cx, cz);
 			if (entry != null) {

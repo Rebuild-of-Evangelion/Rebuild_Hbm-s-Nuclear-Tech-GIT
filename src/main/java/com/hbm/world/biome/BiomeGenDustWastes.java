@@ -1,5 +1,6 @@
 package com.hbm.world.biome;
 
+import com.hbm.config.WorldConfig;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.settings.GameSettings;
@@ -49,12 +50,16 @@ public class BiomeGenDustWastes extends Biome {
 
 	@Override
 	public int getWaterColorMultiplier() {
+		if (!WorldConfig.enableDustWastesBiome)
+			return super.getWaterColorMultiplier();
 		return 0x505020;
 	}
 
 	@Override
 	@SideOnly(Side.CLIENT)
 	public int getGrassColorAtPos(BlockPos pos) {
+		if (!WorldConfig.enableDustWastesBiome)
+			return super.getGrassColorAtPos(pos);
 		double noise = GRASS_COLOR_NOISE.getValue(pos.getX() * 0.225D, pos.getZ() * 0.225D);
 		return noise < -0.1D ? 0x404040 : 0x303030;
 	}
@@ -62,12 +67,16 @@ public class BiomeGenDustWastes extends Biome {
 	@Override
 	@SideOnly(Side.CLIENT)
 	public int getFoliageColorAtPos(BlockPos pos) {
+		if (!WorldConfig.enableDustWastesBiome)
+			return super.getFoliageColorAtPos(pos);
 		return 0x6A7039;
 	}
 
 	@Override
 	@SideOnly(Side.CLIENT)
 	public int getSkyColorByTemp(float temp) {
+		if (!WorldConfig.enableDustWastesBiome)
+			return super.getSkyColorByTemp(temp);
 		return 0x424A42;
 	}
 
@@ -83,6 +92,7 @@ public class BiomeGenDustWastes extends Biome {
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent(priority = EventPriority.LOW)
 	public static void tintFog(EntityViewRenderEvent.FogColors event) {
+		if (!WorldConfig.enableDustWastesBiome) return;
 		EntityPlayer player = Minecraft.getMinecraft().player;
 		if (player == null) return;
 		BlockPos headPos = new BlockPos((int) Math.floor(player.posX), (int) Math.floor(player.posY), (int) Math.floor(player.posZ));
@@ -153,6 +163,7 @@ public class BiomeGenDustWastes extends Biome {
 
 	@SubscribeEvent
 	public static void dustWastesEntityFire(TickEvent.WorldTickEvent event) {
+		if (!WorldConfig.enableDustWastesBiome) return;
 		if (event.world == null || event.world.isRemote || event.phase != TickEvent.Phase.START) return;
 		if (event.world.loadedEntityList.isEmpty()) return;
 		for (Object o : new ArrayList<Object>(event.world.loadedEntityList)) {

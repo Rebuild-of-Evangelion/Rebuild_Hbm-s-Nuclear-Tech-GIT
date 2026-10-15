@@ -165,7 +165,7 @@ public class ModEventHandler {
 			evt.getRegistry().register(e);
 		}
 	}
-	
+
 	@SubscribeEvent
 	public void attachRadCap(AttachCapabilitiesEvent<Entity> e) {
 		if(e.getObject() instanceof EntityLivingBase)
@@ -1182,10 +1182,8 @@ public class ModEventHandler {
 
 	@SubscribeEvent
 	public void onBiomeRegister(RegistryEvent.Register<Biome> evt) {
-		if (WorldConfig.enableDustWastesBiome) {
-			evt.getRegistry().register(BiomeGenDustWastes.dustWastes.setRegistryName("hbm", "dust_wastes"));
-			BiomeGenDustWastes.initDictionary();
-		}
+		evt.getRegistry().register(BiomeGenDustWastes.dustWastes.setRegistryName("hbm", "dust_wastes"));
+		BiomeGenDustWastes.initDictionary();
 	}
 
 	@SubscribeEvent

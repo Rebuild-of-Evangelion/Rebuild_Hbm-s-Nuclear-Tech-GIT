@@ -309,6 +309,7 @@ import com.hbm.render.entity.TSmokeRenderer;
 import com.hbm.render.entity.effect.RenderCloudTom;
 import com.hbm.render.entity.effect.RenderQuasar;
 import com.hbm.render.entity.effect.RenderTorex;
+import com.hbm.render.entity.effect.RenderShockwave;
 import com.hbm.render.entity.effect.RenderSpear;
 import com.hbm.render.entity.item.RenderMovingItem;
 import com.hbm.render.entity.missile.RenderBoosterMissile;
@@ -778,6 +779,7 @@ public class ClientProxy extends ServerProxy {
 		RenderingRegistry.registerEntityRenderingHandler(EntityFalloutRain.class, new RenderFalloutRainFactory());
 		RenderingRegistry.registerEntityRenderingHandler(EntityFalloutRainParallelized.class, RenderEmpty.FACTORY);
 		RenderingRegistry.registerEntityRenderingHandler(EntityNukeTorex.class, RenderTorex.FACTORY);
+		RenderingRegistry.registerEntityRenderingHandler(ExplosionLarge.EntityShockwave.class, RenderShockwave.FACTORY);
 		RenderingRegistry.registerEntityRenderingHandler(EntitySmokeFX.class, new MultiCloudRendererFactory(new Item[] {ModItems.smoke1, ModItems.smoke2, ModItems.smoke3, ModItems.smoke4, ModItems.smoke5, ModItems.smoke6, ModItems.smoke7, ModItems.smoke8}));
 		RenderingRegistry.registerEntityRenderingHandler(EntityBSmokeFX.class, new MultiCloudRendererFactory(new Item[] {ModItems.b_smoke1, ModItems.b_smoke2, ModItems.b_smoke3, ModItems.b_smoke4, ModItems.b_smoke5, ModItems.b_smoke6, ModItems.b_smoke7, ModItems.b_smoke8}));
 		RenderingRegistry.registerEntityRenderingHandler(EntityShrapnel.class, new ShrapnelRendererFactory());

@@ -294,7 +294,7 @@ public class HazardRegistry {
 		
 		registerHazItem(mush, 1);
 		registerHazItem(mush_block, 4);
-		registerHazItem(mush_block_stem, 4);
+		registerHazItem(mush_block_red, 4);
 		registerHazItem(brick_jungle_ooze, 10);
 		registerHazItem(brick_jungle_ooze, 10);
 		registerHazItem(brick_jungle_ooze, 10);

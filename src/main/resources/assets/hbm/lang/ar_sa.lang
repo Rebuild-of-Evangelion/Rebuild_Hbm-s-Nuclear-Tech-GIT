@@ -545,7 +545,10 @@ container.machineSolderingStation=محطة لحام
 container.machineSolidifier=الصلبة
 container.machineTurbine=توربينات البخار
 container.machineTurbofan=توربوفان
-container.machineUUMixer=خلاط UU الصناعي
+container.machine
+
+
+Mixer=خلاط UU الصناعي
 container.machine_deuterium=مستخرج الديوتيريوم
 container.machine_schrabidium_transmutator=جهاز تحويل السكرابيديوم
 container.microwave=الميكروويف
@@ -728,7 +731,7 @@ desc.cannotcor1=لا يمكن تخزين السوائل المسببة للتآ�
 desc.cannothighcor=لا يمكن تخزين السوائل شديدة التآكل بشكل صحيح
 desc.cannothot=لا يمكن تخزين السوائل الساخنة
 desc.capacity=السعة: %smB
-desc.chargeadds=تضيف كل تهمة:
+desc.chargeadds=تضيف كل تهمة: %s m
 desc.choosetarget1=يرجى تحديد هدف من خلال النقر على الكتلة المجاورة لك.
 desc.choosetarget2=يرجى تحديد هدف عن طريق تحديد الإحداثيات يدويًا.
 desc.choosetarget3=يرجى تحديد هدف من خلال النقر على أي مكان في مسافة العرض.
@@ -4832,7 +4835,7 @@ tile.mud_block.name=واتز الطين
 tile.muffler.name=كاتم صوت
 tile.mush.name=فطر متوهج
 tile.mush_block.name=ينمو متوهجة شروم
-tile.mush_block_stem.name=ينمو متوهجة الجذعية
+tile.mush_block_red.name=ينمو متوهجة شروم
 tile.ntm_dirt.name=التراب
 tile.nuke_boy.name=الولد الصغير
 tile.nuke_custom.name=نووي مخصص

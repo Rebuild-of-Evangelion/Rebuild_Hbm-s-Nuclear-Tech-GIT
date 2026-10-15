@@ -9,6 +9,7 @@ import com.hbm.lib.HBMSoundHandler;
 import com.hbm.main.MainRegistry;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.INBTPacketReceiver;
+import com.hbm.config.WorldConfig;
 import com.hbm.world.biome.BiomeGenDustWastes;
 
 import api.hbm.tile.IHeatSource;
@@ -258,7 +259,7 @@ public class TileEntityHeatBoiler extends TileEntity implements INBTPacketReceiv
     protected void tryPullHeat() {
 
         if(this.heat >= TileEntityHeatBoiler.maxHeat) return;
-        if (world.getBiome(pos) instanceof BiomeGenDustWastes) {
+        if (WorldConfig.enableDustWastesBiome && world.getBiome(pos) instanceof BiomeGenDustWastes) {
             this.heat += Math.max(1, (maxHeat - this.heat) / 1000);
             if (this.heat > maxHeat) this.heat = maxHeat;
             return;

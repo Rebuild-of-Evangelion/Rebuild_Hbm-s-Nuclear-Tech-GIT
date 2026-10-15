@@ -11,6 +11,7 @@ import com.hbm.packet.FluidTankPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TileEntityProxyCombo;
+import com.hbm.config.WorldConfig;
 import com.hbm.world.biome.BiomeGenDustWastes;
 
 import net.minecraft.block.Block;
@@ -71,7 +72,7 @@ public class TileEntityBarrel extends TileEntityMachineBase implements ITickable
 			}
 
 			// 1.7.10: a barrel full of water explodes in the crater's eternal fire.
-			if (tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
+			if (WorldConfig.enableDustWastesBiome && tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
 				int light = world.getLightFor(EnumSkyBlock.SKY, pos);
 				if (light > 7) {
 					world.newExplosion(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 5.0F, true, true);

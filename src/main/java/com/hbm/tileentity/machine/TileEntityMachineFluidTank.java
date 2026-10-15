@@ -10,6 +10,7 @@ import com.hbm.packet.FluidTankPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.TileEntityProxyCombo;
+import com.hbm.config.WorldConfig;
 import com.hbm.world.biome.BiomeGenDustWastes;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -93,7 +94,7 @@ public class TileEntityMachineFluidTank extends TileEntityMachineBase implements
 			}
 
 			// 1.7.10: a water-filled fluid tank explodes in the crater's eternal fire.
-			if (tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
+			if (WorldConfig.enableDustWastesBiome && tank.getFluid() != null && tank.getFluid().getFluid() == FluidRegistry.WATER && world.getBiome(pos) instanceof BiomeGenDustWastes) {
 				int light = world.getLightFor(EnumSkyBlock.SKY, pos.up(2));
 				if (light > 7) {
 					world.destroyBlock(pos, false);

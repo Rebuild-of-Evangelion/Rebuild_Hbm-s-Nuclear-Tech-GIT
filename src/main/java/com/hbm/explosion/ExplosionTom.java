@@ -1,5 +1,6 @@
 package com.hbm.explosion;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.gen.ChunkProviderServer;
 
 public class ExplosionTom
 {
@@ -36,7 +39,8 @@ public class ExplosionTom
 	private int element;
 	private final Map<Long, Integer> biomeChunkCounts = new HashMap<Long, Integer>();
 	private final Map<Long, Integer> biomeChunkTotals = new HashMap<Long, Integer>();
-	
+	private final ArrayDeque<Long> deferredColumns = new ArrayDeque<Long>();
+
 	public void saveToNbt(NBTTagCompound nbt, String name) {
 		nbt.setInteger(name + "posX", posX);
 		nbt.setInteger(name + "posY", posY);
@@ -51,7 +55,7 @@ public class ExplosionTom
 		nbt.setInteger(name + "leg", leg);
 		nbt.setInteger(name + "element", element);
 	}
-	
+
 	public void readFromNbt(NBTTagCompound nbt, String name) {
 		posX = nbt.getInteger(name + "posX");
 		posY = nbt.getInteger(name + "posY");
@@ -66,21 +70,21 @@ public class ExplosionTom
 		leg = nbt.getInteger(name + "leg");
 		element = nbt.getInteger(name + "element");
 	}
-	
+
 	public ExplosionTom(int x, int y, int z, World world, int rad)
 	{
 		this.posX = x;
 		this.posY = y;
 		this.posZ = z;
-		
+
 		this.world = world;
-		
+
 		this.radius = rad;
 		this.radius2 = this.radius * this.radius;
 
 		this.nlimit = this.radius2 * 4;
 	}
-	
+
 	public boolean update() {
 		if(!CompatibilityConfig.isWarDim(world)){
 			return true;
@@ -93,7 +97,48 @@ public class ExplosionTom
 		this.lastposX = this.leg == 0 ? this.shell : this.leg == 1 ? -this.element : this.leg == 2 ? -this.shell : this.element;
 		this.lastposZ = this.leg == 0 ? this.element : this.leg == 1 ? this.shell : this.leg == 2 ? -this.element : -this.shell;
 		this.n++;
-		return this.n > this.nlimit;
+		int retryBudget = 32;
+		while(!deferredColumns.isEmpty() && retryBudget-- > 0) {
+			long packedColumn = deferredColumns.poll();
+			breakColumn(unpackColumnX(packedColumn), unpackColumnZ(packedColumn));
+		}
+		return this.n > this.nlimit && deferredColumns.isEmpty();
+	}
+
+	private boolean isNeighborhoodPopulated(int chunkX, int chunkZ) {
+		for(int dx = -1; dx <= 1; dx++) {
+			for(int dz = -1; dz <= 1; dz++) {
+				int neighborX = chunkX + dx;
+				int neighborZ = chunkZ + dz;
+				Chunk chunk = world.getChunk(neighborX, neighborZ);
+				if(chunk == null) return false;
+				if(!chunk.isTerrainPopulated()) {
+					ensureChunkPopulated(chunk, neighborX, neighborZ);
+					if(!chunk.isTerrainPopulated()) return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private void ensureChunkPopulated(Chunk chunk, int chunkX, int chunkZ) {
+		world.getChunk(chunkX + 1, chunkZ);
+		world.getChunk(chunkX, chunkZ + 1);
+		world.getChunk(chunkX + 1, chunkZ + 1);
+		ChunkProviderServer provider = (ChunkProviderServer) world.getChunkProvider();
+		chunk.populate(provider, provider.chunkGenerator);
+	}
+
+	private static long packColumn(int x, int z) {
+		return ((long) x << 32) | (z & 0xFFFFFFFFL);
+	}
+
+	private static int unpackColumnX(long packedColumn) {
+		return (int)(packedColumn >> 32);
+	}
+
+	private static int unpackColumnZ(long packedColumn) {
+		return (int)packedColumn;
 	}
 
 	private void breakColumn(int x, int z) {
@@ -102,6 +147,10 @@ public class ExplosionTom
 		if(dist > 0) {
 			int pX = posX + x;
 			int pZ = posZ + z;
+			if(!isNeighborhoodPopulated(pX >> 4, pZ >> 4)) {
+				deferredColumns.add(packColumn(x, z));
+				return;
+			}
 			double X = Math.pow((this.posX - pX), 2);
 			double Z = Math.pow((this.posZ - pZ), 2);
 			double distance = Math.sqrt(X + Z); // Distance calculations used for crater rim stuff
@@ -147,14 +196,12 @@ public class ExplosionTom
 										pos.setPos(pX + i, y + j, pZ + k);
 										m = world.getBlockState(pos).getMaterial();
 										if(m == Material.WATER || m == Material.ICE || m == Material.SNOW || m.getCanBurn()) {
-											world.removeTileEntity(pos);
 											world.setBlockToAir(pos);
 											world.setBlockToAir(pos.setPos(pX, y, pZ));
 										}
 									}
 								}
 							}
-							world.removeTileEntity(pos.setPos(pX, y, pZ));
 							setBlockAndNotify(pos.setPos(pX, y, pZ), Blocks.AIR.getDefaultState());
 						}
 					} else {
@@ -208,6 +255,7 @@ public class ExplosionTom
 
 	private void setBlockAndNotify(MutableBlockPos pos, IBlockState state) {
 		Block oldBlock = world.getBlockState(pos).getBlock();
+		world.removeTileEntity(pos);
 		world.setBlockState(pos, state, 2);
 		for(EnumFacing facing : EnumFacing.values()) {
 			BlockPos np = pos.offset(facing);

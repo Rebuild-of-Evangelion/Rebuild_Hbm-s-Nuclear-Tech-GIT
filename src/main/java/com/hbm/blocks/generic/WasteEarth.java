@@ -65,6 +65,12 @@ public class WasteEarth extends Block {
 	}
 	
 	@Override
+	@SideOnly(Side.CLIENT)
+	public net.minecraft.util.BlockRenderLayer getRenderLayer() {
+		return this == ModBlocks.waste_earth ? net.minecraft.util.BlockRenderLayer.CUTOUT_MIPPED : net.minecraft.util.BlockRenderLayer.SOLID;
+	}
+	
+	@Override
 	public Item getItemDropped(IBlockState state, Random rand, int fortune) {
 		if(this == ModBlocks.frozen_grass){
 			return Items.SNOWBALL;

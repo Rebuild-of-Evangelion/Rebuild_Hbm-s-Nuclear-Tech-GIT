@@ -1,6 +1,7 @@
 package com.hbm.entity.effect;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.generic.BlockMushHuge;
 import com.hbm.blocks.generic.BlockPowder;
 import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.blocks.generic.WasteLog;
@@ -976,6 +977,14 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                                     boolean reachedStone, boolean lastReachedStone, int stoneDepth, int maxStoneDepth,
                                     ConcurrentMap<Long, IBlockState> out, ExtendedBlockStorage[] ebs, int contactHeight, boolean[] stop) {
         Random rnd = ThreadLocalRandom.current();
+        if (META_TIERED.contains(bblock)) {
+            int m = tierIndex(dist, rnd, false, false, 0, -1);
+            if (m > b.getBlock().getMetaFromState(b)) {
+                out.put(Library.blockPosToLong(x, y, z), bblock.getStateFromMeta(m));
+                markNotify(x, y, z);
+            }
+            return;
+        }
         if (bblock == Blocks.BEDROCK || bblock == ModBlocks.ore_bedrock_oil || bblock == ModBlocks.ore_bedrock_block) {
             if (getEffectiveState(x, y + 1, z, ebs).getBlock() == Blocks.AIR) {
                 out.put(Library.blockPosToLong(x, y + 1, z), ModBlocks.toxic_block.getDefaultState());
@@ -1155,8 +1164,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
         if (bblock == Blocks.BROWN_MUSHROOM_BLOCK || bblock == Blocks.RED_MUSHROOM_BLOCK) {
             if (dist < s0) {
                 BlockHugeMushroom.EnumType meta = b.getValue(BlockHugeMushroom.VARIANT);
-                out.put(Library.blockPosToLong(x, y, z), meta == BlockHugeMushroom.EnumType.STEM
-                        ? ModBlocks.mush_block_stem.getDefaultState() : ModBlocks.mush_block.getDefaultState());
+                out.put(Library.blockPosToLong(x, y, z), BlockMushHuge.getState(bblock == Blocks.RED_MUSHROOM_BLOCK, meta == BlockHugeMushroom.EnumType.STEM));
             }
             return;
         }
@@ -1179,14 +1187,6 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
             int nt = tierIndex(dist, rnd, false, true, stoneDepth, maxStoneDepth);
             if (nt > Arrays.asList(SELLAFIELD).indexOf(bblock)) {
                 out.put(Library.blockPosToLong(x, y, z), SELLAFIELD[nt].getStateFromMeta(rnd.nextInt(4)));
-                markNotify(x, y, z);
-            }
-            return;
-        }
-        if (META_TIERED.contains(bblock)) {
-            int m = tierIndex(dist, rnd, false, false, 0, -1);
-            if (m > b.getBlock().getMetaFromState(b)) {
-                out.put(Library.blockPosToLong(x, y, z), bblock.getStateFromMeta(m));
                 markNotify(x, y, z);
             }
             return;
@@ -1477,8 +1477,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                 if (bblock == Blocks.BROWN_MUSHROOM_BLOCK || bblock == Blocks.RED_MUSHROOM_BLOCK) {
                     if (l < rS0) {
                         BlockHugeMushroom.EnumType meta = b.getValue(BlockHugeMushroom.VARIANT);
-                        out.put(Library.blockPosToLong(x, y, z), meta == BlockHugeMushroom.EnumType.STEM
-                                ? ModBlocks.mush_block_stem.getDefaultState() : ModBlocks.mush_block.getDefaultState());
+                        out.put(Library.blockPosToLong(x, y, z), BlockMushHuge.getState(bblock == Blocks.RED_MUSHROOM_BLOCK, meta == BlockHugeMushroom.EnumType.STEM));
                         markNotify(x, y, z);
                     }
                     return;

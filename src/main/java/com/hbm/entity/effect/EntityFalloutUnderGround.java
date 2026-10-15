@@ -1,6 +1,7 @@
 package com.hbm.entity.effect;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.generic.BlockMushHuge;
 import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.config.BombConfig;
 import com.hbm.config.VersatileConfig;
@@ -290,11 +291,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 			} else if(bblock == Blocks.BROWN_MUSHROOM_BLOCK || bblock == Blocks.RED_MUSHROOM_BLOCK) {
 				if(l < s0){
 					BlockHugeMushroom.EnumType meta = b.getValue(BlockHugeMushroom.VARIANT);
-					if(meta == BlockHugeMushroom.EnumType.STEM) {
-						world.setBlockState(pos, ModBlocks.mush_block_stem.getDefaultState());
-					} else {
-						world.setBlockState(pos, ModBlocks.mush_block.getDefaultState());
-					}
+					world.setBlockState(pos, BlockMushHuge.getState(bblock == Blocks.RED_MUSHROOM_BLOCK, meta == BlockHugeMushroom.EnumType.STEM));
 				}
 				return;
 

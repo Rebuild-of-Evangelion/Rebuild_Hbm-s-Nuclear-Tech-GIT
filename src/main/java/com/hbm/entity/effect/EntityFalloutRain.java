@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.generic.BlockMushHuge;
 import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.config.BombConfig;
 import com.hbm.config.RadiationConfig;
@@ -425,6 +426,14 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				continue;
 			}
 
+			if(META_TIERED.contains(bblock)) {
+				int m = tierIndex(dist, false, 0, -1);
+				if(m > b.getBlock().getMetaFromState(b)){
+					world.setBlockState(pos, bblock.getStateFromMeta(m), 2);
+				}
+				continue;
+			}
+
 			// if(b.getBlock() == Blocks.WATER) {
 			// 	world.setBlockState(pos,ModBlocks.radwater_block.getDefaultState(), 2);
 			// }
@@ -566,11 +575,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 			else if(bblock == Blocks.BROWN_MUSHROOM_BLOCK || bblock == Blocks.RED_MUSHROOM_BLOCK) {
 				if(dist < s0){
 					BlockHugeMushroom.EnumType meta = b.getValue(BlockHugeMushroom.VARIANT);
-					if(meta == BlockHugeMushroom.EnumType.STEM) {
-						world.setBlockState(pos,ModBlocks.mush_block_stem.getDefaultState(), 2);
-					} else {
-						world.setBlockState(pos,ModBlocks.mush_block.getDefaultState(), 2);
-					}
+					world.setBlockState(pos, BlockMushHuge.getState(bblock == Blocks.RED_MUSHROOM_BLOCK, meta == BlockHugeMushroom.EnumType.STEM), 2);
 				}
 				continue;
 			}
@@ -599,13 +604,6 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				int nt = tierIndex(dist, true, stoneDepth, maxStoneDepth);
 				if(nt > Arrays.asList(SELLAFIELD).indexOf(bblock)){
 					world.setBlockState(pos, SELLAFIELD[nt].getStateFromMeta(world.rand.nextInt(4)));
-				}
-				continue;
-			}
-			else if(META_TIERED.contains(bblock)) {
-				int m = tierIndex(dist, false, 0, -1);
-				if(m > b.getBlock().getMetaFromState(b)){
-					world.setBlockState(pos, bblock.getStateFromMeta(m), 2);
 				}
 				continue;
 			}

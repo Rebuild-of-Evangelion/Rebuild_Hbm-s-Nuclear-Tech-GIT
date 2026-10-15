@@ -108,6 +108,8 @@ public class CompatibilityConfig {
 	public static boolean peaceDimensionsIsWhitelist = true;
 	public static HashSet peaceDimensions;
 
+	public static boolean enableDustWastesBiome = true;
+
     public static boolean overWriteVanillaLeafForBugFix = true;
 
 
@@ -440,6 +442,7 @@ public class CompatibilityConfig {
 
 		doFillCraterWithWater =  CommonConfig.createConfigBool(config, CATEGORY_NUKES, "07.04_doFillCraterWithWater", "If true then nukes will fill the crater with water if it is in a wet place. It creates a bit of lagg but looks better than without it.", true);
 		fillCraterWithWater = CommonConfig.createConfigHashMap(config, CATEGORY_NUKES, "07.04_fillCraterWithWater", "Waterlevel per dimension which the nuke uses to fill the crater. {+n=>waterlevel height, 0=>dimension waterlevel, -n=> n blocks below dimension waterlevel } - <dimID:n> (Int:Int)", "Int", "Int", new String[]{ "0:0" }, ":");
+		enableDustWastesBiome = CommonConfig.createConfigBool(config, CATEGORY_NUKES, "07.07_enableDustWastesBiome", "If true then nuclear explosions will turn the terrain they destroy into the Dust Wastes biome", true);
 		
 		peaceDimensionsIsWhitelist =  CommonConfig.createConfigBool(config, CATEGORY_NUKES, "07.05_peaceDimensionsIsWhitelist", "If true then the listed dimensions below are all peacefull. If false then the listed dimensions are the only ones where destruction happens.", true);
 		peaceDimensions = CommonConfig.createConfigHashSet(config, CATEGORY_BORES, "07.06_peaceDimensions", "List of Dimensions where block destruction and damage is disabled (Used for server lobbies/science servers/pvp arenas) - <dimID> (Int)", "Int", new String[]{

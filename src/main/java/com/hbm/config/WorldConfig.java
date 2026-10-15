@@ -77,6 +77,7 @@ public class WorldConfig {
 	
 	public static void loadFromCompatibilityConfig() {
 
+		enableDustWastesBiome = CompatibilityConfig.enableDustWastesBiome;
 		uraniumSpawn = convertToInt(CompatibilityConfig.uraniumSpawn.get(0));
 		titaniumSpawn = convertToInt(CompatibilityConfig.titaniumSpawn.get(0));
 		sulfurSpawn = convertToInt(CompatibilityConfig.sulfurSpawn.get(0));

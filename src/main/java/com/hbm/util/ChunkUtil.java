@@ -159,7 +159,7 @@ public final class ChunkUtil {
         int key = world.provider.getDimension();
         if (activeTask.get(key) == 0) return;
         ConcurrentHashMap<Long, Chunk> dimMap = chunkMap.get(key);
-        if (dimMap != null) dimMap.put(ChunkPos.asLong(chunk.x, chunk.z), chunk);
+        if (dimMap != null && chunk.isTerrainPopulated()) dimMap.put(ChunkPos.asLong(chunk.x, chunk.z), chunk);
     }
 
     @SubscribeEvent

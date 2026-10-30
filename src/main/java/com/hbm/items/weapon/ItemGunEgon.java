@@ -64,7 +64,7 @@ public class ItemGunEgon extends ItemGunBase {
 		if(hand == EnumHand.OFF_HAND)
 			return;
 		if(player == Minecraft.getMinecraft().player){
-			if(m1 && Library.countInventoryItem(player.inventory, getBeltType(player, stack, true)) >= 2){
+			if(m1 && Library.countInventoryItem(player.inventory, getBeltType(player, stack, true).ammo, getBeltType(player, stack, true).ammoMeta) >= 2){
 				activeTicks = Math.min(activeTicks + 1, 5);
 				float[] angles = ItemGunEgon.getBeamDirectionOffset(player.world.getTotalWorldTime()+1);
 				Vec3d look = Library.changeByAngle(player.getLook(1), angles[0], angles[1]);
@@ -127,11 +127,11 @@ public class ItemGunEgon extends ItemGunBase {
 		super.updateServer(stack, world, player, slot, hand);
 		if(hand == EnumHand.OFF_HAND)
 			return;
-		if(getIsMouseDown(stack) && Library.countInventoryItem(player.inventory, getBeltType(player, stack, true)) >= 2){
+		if(getIsMouseDown(stack) && Library.countInventoryItem(player.inventory, getBeltType(player, stack, true).ammo, getBeltType(player, stack, true).ammoMeta) >= 2){
 			setIsFiring(stack, true);
 			if(world.getTotalWorldTime() % 5 == 0){
-				Library.consumeInventoryItem(player.inventory, getBeltType(player, stack, true));
-				Library.consumeInventoryItem(player.inventory, getBeltType(player, stack, true));
+				Library.consumeInventoryItem(player.inventory, getBeltType(player, stack, true).ammo, getBeltType(player, stack, true).ammoMeta);
+				Library.consumeInventoryItem(player.inventory, getBeltType(player, stack, true).ammo, getBeltType(player, stack, true).ammoMeta);
 			}
 			float[] angles = ItemGunEgon.getBeamDirectionOffset(player.world.getTotalWorldTime()+1);
 			Vec3d look = Library.changeByAngle(player.getLook(1), angles[0], angles[1]);
@@ -188,7 +188,7 @@ public class ItemGunEgon extends ItemGunBase {
 	public static float getFirstPersonAnimFade(EntityPlayer ent){
 		if(ent.getHeldItemMainhand().getItem() != ModItems.gun_egon)
 			return 0;
-		return MathHelper.clamp((m1 && Library.countInventoryItem(ent.inventory, getBeltType(ent, ent.getHeldItemMainhand(), true)) >= 2 ? activeTicks + MainRegistry.proxy.partialTicks() : activeTicks - MainRegistry.proxy.partialTicks() )/5F, 0, 1);
+		return MathHelper.clamp((m1 && Library.countInventoryItem(ent.inventory, getBeltType(ent, ent.getHeldItemMainhand(), true).ammo, getBeltType(ent, ent.getHeldItemMainhand(), true).ammoMeta) >= 2 ? activeTicks + MainRegistry.proxy.partialTicks() : activeTicks - MainRegistry.proxy.partialTicks() )/5F, 0, 1);
 	}
 	
 	public static float[] getBeamDirectionOffset(float time){

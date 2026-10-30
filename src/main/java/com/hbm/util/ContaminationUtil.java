@@ -587,7 +587,7 @@ public class ContaminationUtil {
 			vec = vec.normalize();
 			double dmgLen = Math.max(len, dmgLenMin);
 
-			float res = 0;
+			double res = 1D;
 
 			for(int i = 1; i < len; i++) {
 				int ix = (int)Math.floor(x + vec.xCoord * i);
@@ -596,12 +596,13 @@ public class ContaminationUtil {
 				if(iy < 0 || iy > 255) continue;
 				Chunk chunk = cps != null ? cps.getLoadedChunk(ix >> 4, iz >> 4) : null;
 				if(chunk == null) continue;
-				res += chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
+				float blockRes = chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
+				if(blockRes > 0) {
+					res *= (1.0D + blockRes * 0.05D);
+				}
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
 
-			if(res < 1)
-				res = 1;
 			if(isLiving && rad3d > 0){
 				float eRads = rad3d;
 				eRads *= (float)Math.exp(-dmgLen / ATTEN_GAMMA);

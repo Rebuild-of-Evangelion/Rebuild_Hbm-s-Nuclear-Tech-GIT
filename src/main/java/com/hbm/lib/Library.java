@@ -911,6 +911,16 @@ public static boolean canConnect(IBlockAccess world, BlockPos pos, ForgeDirectio
 		}
 		return false;
 	}
+
+	public static boolean hasInventoryItem(InventoryPlayer inventory, Item ammo, int meta) {
+		for(int i = 0; i < inventory.getSizeInventory(); i++) {
+			ItemStack stack = inventory.getStackInSlot(i);
+			if(stack.getItem() == ammo && stack.getItemDamage() == meta) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	public static boolean hasInventoryOreDict(InventoryPlayer inventory, String name) {
 		int oreId = OreDictionary.getOreID(name);
@@ -938,10 +948,32 @@ public static boolean canConnect(IBlockAccess world, BlockPos pos, ForgeDirectio
 		return count;
 	}
 
+	public static int countInventoryItem(InventoryPlayer inventory, Item ammo, int meta) {
+		int count = 0;
+		for(int i = 0; i < inventory.getSizeInventory(); i++) {
+			ItemStack stack = inventory.getStackInSlot(i);
+			if(stack.getItem() == ammo && stack.getItemDamage() == meta) {
+				count += stack.getCount();
+			}
+		}
+		return count;
+	}
+
 	public static void consumeInventoryItem(InventoryPlayer inventory, Item ammo) {
 		for(int i = 0; i < inventory.getSizeInventory(); i++) {
 			ItemStack stack = inventory.getStackInSlot(i);
 			if(stack.getItem() == ammo && !stack.isEmpty()) {
+				stack.shrink(1);
+				inventory.setInventorySlotContents(i, stack.copy());
+				return;
+			}
+		}
+	}
+
+	public static void consumeInventoryItem(InventoryPlayer inventory, Item ammo, int meta) {
+		for(int i = 0; i < inventory.getSizeInventory(); i++) {
+			ItemStack stack = inventory.getStackInSlot(i);
+			if(stack.getItem() == ammo && stack.getItemDamage() == meta && !stack.isEmpty()) {
 				stack.shrink(1);
 				inventory.setInventorySlotContents(i, stack.copy());
 				return;

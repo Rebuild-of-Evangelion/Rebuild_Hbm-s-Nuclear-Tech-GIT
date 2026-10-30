@@ -76,6 +76,7 @@ public final class HBMSoundHandler {
 	public static SoundEvent calShoot;
 	public static SoundEvent lacunaeShoot;
 	public static SoundEvent fatmanShoot;
+	public static SoundEvent fireFatman;
 	public static SoundEvent osiprShoot;
 	public static SoundEvent zomgShoot;
 	public static SoundEvent jetpackTank;
@@ -156,6 +157,7 @@ public final class HBMSoundHandler {
 	public static SoundEvent cybercrab;
 	public static SoundEvent osiprReload;
 	public static SoundEvent fatmanReload;
+	public static SoundEvent fatmanFull;
 	public static SoundEvent soyuzReady;
 	public static SoundEvent soyuzTakeOff;
 	public static SoundEvent chime;
@@ -333,6 +335,7 @@ public final class HBMSoundHandler {
 		GunConfiguration.RSOUND_RIFLE = reloadRifle = register("");
 		GunConfiguration.RSOUND_REVOLVER = reloadRevolver = register("weapon.revolverReload");
 		GunConfiguration.RSOUND_FATMAN = fatmanReload = register("weapon.fatmanReload");
+		fatmanFull = register("weapon.reload.fatmanFull");
 		boatWeapon = register("weapon.boat");
 		ricochet = register("weapon.ricochet");
 		grenadeBounce = register("weapon.gBounce");
@@ -348,6 +351,7 @@ public final class HBMSoundHandler {
 		calShoot = register("weapon.calShoot");
 		lacunaeShoot = register("weapon.lacunaeShoot");
 		fatmanShoot = register("weapon.fatmanShoot");
+		fireFatman = register("weapon.fire.fatman");
 		osiprShoot = register("weapon.osiprShoot");
 		zomgShoot = register("weapon.zomgShoot");
 		jetpackTank = register("item.jetpackTank");

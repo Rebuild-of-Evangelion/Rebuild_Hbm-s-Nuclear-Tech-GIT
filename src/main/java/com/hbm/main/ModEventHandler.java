@@ -1177,6 +1177,20 @@ public class ModEventHandler {
 	}
 
 	@SubscribeEvent
+	public void onMissingMappings(RegistryEvent.MissingMappings<Item> evt) {
+		for(RegistryEvent.MissingMappings.Mapping<Item> mapping : evt.getMappings()) {
+			String path = mapping.key.getPath();
+			if(path.equals("gun_proto") || path.equals("gun_mirv") || path.equals("gun_bf")) {
+				mapping.remap(ModItems.gun_fatman);
+			} else if(path.startsWith("ammo_") || path.equals("gun_bf_ammo")) {
+				mapping.remap(ModItems.ammo_standard);
+			} else if(path.startsWith("clip_") || path.equals("ammo_container")) {
+				mapping.remap(ModItems.clip_standard);
+			}
+		}
+	}
+
+	@SubscribeEvent
 	public void onBlockRegister(RegistryEvent.Register<Block> evt) {
 	}
 

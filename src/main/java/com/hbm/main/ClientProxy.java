@@ -2220,9 +2220,6 @@ public class ClientProxy extends ServerProxy {
 		ModItems.gun_deagle.setTileEntityItemStackRenderer(new ItemRenderWeaponObj());
 		ModItems.gun_supershotgun.setTileEntityItemStackRenderer(new ItemRenderWeaponShotty());
 		ModItems.gun_fatman.setTileEntityItemStackRenderer(new ItemRenderFatMan());
-		ModItems.gun_proto.setTileEntityItemStackRenderer(new ItemRenderFatMan());
-		ModItems.gun_mirv.setTileEntityItemStackRenderer(new ItemRenderMIRVLauncher());
-		ModItems.gun_bf.setTileEntityItemStackRenderer(new ItemRenderBFLauncher());
 		ModItems.gun_zomg.setTileEntityItemStackRenderer(new ItemRenderZOMG());
 		ModItems.gun_xvl1456.setTileEntityItemStackRenderer(new ItemRenderXVL1456());
 		ModItems.gun_hp.setTileEntityItemStackRenderer(new ItemRenderGunHP());

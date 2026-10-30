@@ -101,6 +101,7 @@ import com.hbm.render.item.weapon.ItemRedstoneSwordRender;
 import com.hbm.render.item.weapon.ItemRenderGunAnim;
 import com.hbm.render.item.weapon.ItemRenderGunEgon;
 import com.hbm.render.item.weapon.ItemRenderRedstoneSword;
+import com.hbm.render.item.weapon.ItemRenderWeaponBase;
 import com.hbm.render.misc.BeamPronter;
 import com.hbm.render.misc.RenderAccessoryUtility;
 import com.hbm.render.misc.RenderScreenOverlay;
@@ -488,9 +489,6 @@ public class ModEventHandlerClient {
 		swapModelsNoGui(ModItems.gun_deagle, reg);
 		swapModelsNoGui(ModItems.gun_supershotgun, reg);
 		swapModelsNoGui(ModItems.gun_fatman, reg);
-		swapModelsNoGui(ModItems.gun_proto, reg);
-		swapModelsNoGui(ModItems.gun_mirv, reg);
-		swapModelsNoGui(ModItems.gun_bf, reg);
 		swapModelsNoGui(ModItems.gun_zomg, reg);
 		swapModelsNoGui(ModItems.gun_xvl1456, reg);
 		swapModelsNoGui(ModItems.gun_hp, reg);
@@ -1043,6 +1041,66 @@ public class ModEventHandlerClient {
 		if(player.getHeldItemMainhand().getItem() == ModItems.gun_supershotgun && ItemGunShotty.hasHookedEntity(player.world, player.getHeldItemMainhand())) {
 			e.setNewfov(e.getFov()*1.1F);
 		}
+		ItemStack main = player.getHeldItemMainhand();
+		ItemStack off = player.getHeldItemOffhand();
+		boolean mainGun = main.getItem().getTileEntityItemStackRenderer() instanceof ItemRenderWeaponBase;
+		boolean offGun = off.getItem().getTileEntityItemStackRenderer() instanceof ItemRenderWeaponBase;
+		if(mainGun && ItemGunBase.getIsAiming(EnumHand.MAIN_HAND)) {
+			e.setNewfov(((ItemRenderWeaponBase) main.getItem().getTileEntityItemStackRenderer()).getViewFOV(e.getFov(), EnumHand.MAIN_HAND));
+		} else if(offGun && ItemGunBase.getIsAiming(EnumHand.OFF_HAND)) {
+			e.setNewfov(((ItemRenderWeaponBase) off.getItem().getTileEntityItemStackRenderer()).getViewFOV(e.getFov(), EnumHand.OFF_HAND));
+		}
+	}
+
+	private static String lastMainGunId = null;
+	private static String lastOffGunId = null;
+
+	@SubscribeEvent
+	public void onClientTick(ClientTickEvent e) {
+		if(e.phase != Phase.START) return;
+		EntityPlayer p = Minecraft.getMinecraft().player;
+		if(p == null) return;
+
+		ItemStack main = p.getHeldItemMainhand();
+		ItemStack off = p.getHeldItemOffhand();
+
+		String mid = (main.isEmpty() || !(main.getItem() instanceof ItemGunBase)) ? null : ItemGunBase.getGunId(main);
+		String curMainId = (mid == null || mid.isEmpty()) ? null : mid;
+		String oid = (off.isEmpty() || !(off.getItem() instanceof ItemGunBase)) ? null : ItemGunBase.getGunId(off);
+		String curOffId = (oid == null || oid.isEmpty()) ? null : oid;
+
+		if(curMainId != null) {
+			ItemGunBase gun = (ItemGunBase) main.getItem();
+			if(!Objects.equals(curMainId, lastMainGunId)) {
+				if(!Objects.equals(curMainId, lastOffGunId)) {
+					gun.startAnim(p, main, p.inventory.currentItem, HbmAnimations.AnimType.EQUIP);
+				} else {
+					HbmAnimations.moveAnimToSlot(p, main, EnumHand.MAIN_HAND);
+				}
+			}
+		}
+		if(curOffId != null) {
+			ItemGunBase gun = (ItemGunBase) off.getItem();
+			if(!Objects.equals(curOffId, lastOffGunId)) {
+				if(!Objects.equals(curOffId, lastMainGunId)) {
+					gun.startAnim(p, off, 9, HbmAnimations.AnimType.EQUIP);
+				} else {
+					HbmAnimations.moveAnimToSlot(p, off, EnumHand.OFF_HAND);
+				}
+			}
+		}
+
+		if(ItemGunBase.aimingMainId != null && !Objects.equals(ItemGunBase.aimingMainId, curMainId)) {
+			ItemGunBase.aimingMainId = null;
+			ItemGunBase.resetAimingProgress(EnumHand.MAIN_HAND);
+		}
+		if(ItemGunBase.aimingOffId != null && !Objects.equals(ItemGunBase.aimingOffId, curOffId)) {
+			ItemGunBase.aimingOffId = null;
+			ItemGunBase.resetAimingProgress(EnumHand.OFF_HAND);
+		}
+
+		lastMainGunId = curMainId;
+		lastOffGunId = curOffId;
 	}
 	
 	@SubscribeEvent(priority = EventPriority.LOW)
@@ -1121,7 +1179,7 @@ public class ModEventHandlerClient {
 				//Drillgon200: If I add more guns like this, I'll abstract it.
 				for(EntityPlayer player : Minecraft.getMinecraft().world.playerEntities){
 					if(player.getHeldItemMainhand().getItem() == ModItems.gun_egon && !ItemGunEgon.soundsByPlayer.containsKey(player)){
-						boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true)) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
+						boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammo, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammoMeta) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
 						if(firing){
 							ItemGunEgon.soundsByPlayer.put(player, new GunEgonSoundHandler(player));
 						}
@@ -1173,6 +1231,16 @@ public class ModEventHandlerClient {
 	
 	@SubscribeEvent
 	public void renderSpecificHand(RenderSpecificHandEvent e){
+		ItemStack mainStack = Minecraft.getMinecraft().player.getHeldItem(EnumHand.MAIN_HAND);
+		ItemStack offStack = Minecraft.getMinecraft().player.getHeldItem(EnumHand.OFF_HAND);
+		if(e.getHand() == EnumHand.MAIN_HAND && offStack.getItem() == ModItems.gun_fatman && mainStack.isEmpty()){
+			e.setCanceled(true);
+			return;
+		}
+		if(e.getHand() == EnumHand.OFF_HAND && mainStack.getItem() == ModItems.gun_fatman && offStack.isEmpty()){
+			e.setCanceled(true);
+			return;
+		}
 		if(Minecraft.getMinecraft().player.getHeldItem(e.getHand()).getItem() == ModItems.crucible){
 			e.setCanceled(true);
 			Minecraft.getMinecraft().getItemRenderer().renderItemInFirstPerson(Minecraft.getMinecraft().player, e.getPartialTicks(), e.getInterpolatedPitch(), EnumHand.MAIN_HAND, 0, Minecraft.getMinecraft().player.getHeldItem(e.getHand()), 0);
@@ -1516,7 +1584,7 @@ public class ModEventHandlerClient {
 				ItemGunEgon.activeTrailParticles.remove(player);
 				continue;
 			}
-			boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true)) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
+			boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammo, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammoMeta) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
 			if(!firing){
 				ItemGunEgon.activeTrailParticles.remove(player);
 				continue;
@@ -1815,7 +1883,7 @@ public class ModEventHandlerClient {
 		JetpackHandler.postRenderPlayer(event.getEntityPlayer());
 		EntityPlayer player = event.getEntityPlayer();
 		//GLUON GUN//
-		boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true)) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
+		boolean firing = player == Minecraft.getMinecraft().player ? ItemGunEgon.m1 && Library.countInventoryItem(player.inventory, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammo, ItemGunEgon.getBeltType(player, player.getHeldItemMainhand(), true).ammoMeta) >= 2 : ItemGunEgon.getIsFiring(player.getHeldItemMainhand());
 		EgonBackpackRenderer.showBackpack = false;
 		if(player.getHeldItemMainhand().getItem() == ModItems.gun_egon && firing){
 			GL11.glPushMatrix();

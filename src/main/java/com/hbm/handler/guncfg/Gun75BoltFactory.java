@@ -1,5 +1,7 @@
 package com.hbm.handler.guncfg;
 
+import static com.hbm.items.ItemEnums.EnumAmmo;
+
 import java.util.ArrayList;
 
 import com.hbm.entity.projectile.EntityBulletBase;
@@ -88,7 +90,8 @@ public class Gun75BoltFactory {
 
 		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
 
-		bullet.ammo = ModItems.ammo_75bolt;
+		bullet.ammo = ModItems.ammo_standard;
+		bullet.ammoMeta = EnumAmmo.B75.ordinal();
 		bullet.ammoCount = 30;
 		bullet.spread *= inaccuracy;
 		bullet.dmgMin = 24;
@@ -120,7 +123,8 @@ public class Gun75BoltFactory {
 
 		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
 
-		bullet.ammo = ModItems.ammo_75bolt_incendiary;
+		bullet.ammo = ModItems.ammo_standard;
+		bullet.ammoMeta = EnumAmmo.B75_INCENDIARY.ordinal();
 		bullet.ammoCount = 30;
 		bullet.spread *= inaccuracy;
 		bullet.dmgMin = 26;
@@ -158,7 +162,8 @@ public class Gun75BoltFactory {
 
 		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
 
-		bullet.ammo = ModItems.ammo_75bolt_he;
+		bullet.ammo = ModItems.ammo_standard;
+		bullet.ammoMeta = EnumAmmo.B75_HE.ordinal();
 		bullet.ammoCount = 30;
 		bullet.spread *= inaccuracy;
 		bullet.dmgMin = 32;

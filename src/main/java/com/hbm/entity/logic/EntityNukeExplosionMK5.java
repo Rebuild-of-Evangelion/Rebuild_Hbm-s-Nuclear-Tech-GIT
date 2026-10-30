@@ -89,7 +89,11 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 			}
 		}
 
-		dealDamage(world, this.posX, this.posY, this.posZ, this.radius * 2.0F);
+		double blastMax = 2.0 * this.radius;
+		double thermalMax = Math.min(2.0 * this.radius * Math.pow(this.radius / 80.0, 0.2), 4.0 * this.radius);
+		double radMax = 1.4 * this.radius * Math.pow(this.radius / 80.0, -0.9);
+		double maxRange = Math.max(blastMax, Math.max(thermalMax, radMax));
+		dealDamage(world, this.posX, this.posY, this.posZ, maxRange);
 
 		//make some noise
 		if(!mute) {
@@ -148,13 +152,18 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 					this.world.spawnEntity(falloutRain);
 				}
 				fallingStarted = true;
-			} else if (this.ticksExisted > this.radius * 3){ // wait for thermal radiation (fire damage) to complete before removing the entity
+			} else if (this.ticksExisted > Math.min(9 * this.radius, 4500)){
 				this.setDead();
 			}
 		}
 	}
 
 	public void dealDamage(World world, double x, double y, double z, double radius) {
+		double energy = Math.pow(2.0 * this.radius + 10, 3);
+		double blastMax = 2.0 * this.radius;
+		double thermalMax = Math.min(2.0 * this.radius * Math.pow(this.radius / 80.0, 0.2), 4.0 * this.radius);
+		double radMax = 1.4 * this.radius * Math.pow(this.radius / 80.0, -0.9);
+
 		List<Entity> entities = ContaminationUtil.getEntitiesWithinAABBIndexed(world, new AxisAlignedBB(x-radius, y-radius, z-radius, x+radius, y+radius, z+radius));
 		double weatherFactor = ContaminationUtil.getWeatherAttenuationFactor(world, x, y, z);
 		ChunkProviderServer cps = world.getChunkProvider() instanceof ChunkProviderServer ? (ChunkProviderServer) world.getChunkProvider() : null;
@@ -172,11 +181,10 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 			Vec3 vec = Vec3.createVectorHelper(closestX - x, closestY - y, closestZ - z);
 			double len = vec.length();
 
-			if(len > radius) continue;
 			vec = vec.normalize();
 			double dmgLen = Math.max(len, radius * 0.05D);
 
-			float res = 0;
+			double res = 1D;
 
 			for(int i = 1; i < len; i++) {
 				int ix = (int)Math.floor(x + vec.xCoord * i);
@@ -185,15 +193,15 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				if(iy < 0 || iy > 255) continue;
 				Chunk chunk = cps != null ? cps.getLoadedChunk(ix >> 4, iz >> 4) : null;
 				if(chunk == null) continue;
-				res += chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
+				float blockRes = chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
+				if(blockRes > 0) {
+					res *= (1.0D + blockRes * 0.05D);
+				}
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
 
-			if(res < 1)
-				res = 1;
-
-			if(isLiving && fallout && this.ticksExisted <= Math.max((int)Math.ceil(this.radius * 0.02), 1)){
-				float eRads = (float)Math.min(10_000_000, Math.pow(radius, 3) * (float)Math.pow(0.5, (double)2 * this.ticksExisted / radius) + strength);
+			if(isLiving && fallout && this.ticksExisted <= Math.max((int)Math.ceil(this.radius * 0.02), 1) && len < radMax){
+				float eRads = (float)(0.05 * energy) * (float)Math.pow(0.5, (double)2 * this.ticksExisted / this.radius) + strength;
 				eRads *= (float)Math.exp(-dmgLen / ContaminationUtil.ATTEN_GAMMA);
 				eRads /= (float)(dmgLen * dmgLen * Math.sqrt(res));
 				eRads *= dmgScale;
@@ -209,11 +217,12 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				}
 			}
 
-			int thermalDuration = this.radius * 3;
-			double currentThermalRadius = radius * (1.0 - Math.pow((double)(this.ticksExisted - 1) / thermalDuration, 0.5));
+			int thermalDuration = Math.min(9 * this.radius, 4500);
+			double thermalFrac = (double)(this.ticksExisted - 1) / (thermalDuration - 1);
+			double currentThermalRadius = thermalMax * (1.0 - thermalFrac * thermalFrac * thermalFrac);
 
-			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.radius > 25 && this.ticksExisted <= thermalDuration && res < 2000 && len <= currentThermalRadius) {
-				float fireDamage = (float) ((0.35F * dmgScale * Math.pow(radius + 10, 3) * Math.pow(0.5, 0.5 * this.ticksExisted / radius) * Math.exp(-dmgLen * weatherFactor / ContaminationUtil.ATTEN_THERMAL)) / (float) (dmgLen * dmgLen * res));
+			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.radius > 25 && this.ticksExisted <= thermalDuration && res < 7000 && len <= currentThermalRadius) {
+				float fireDamage = (float)((0.35F * dmgScale * energy * Math.pow(0.5, 0.5 * this.ticksExisted / this.radius) * Math.exp(-dmgLen * weatherFactor / ContaminationUtil.ATTEN_THERMAL)) / (float) (dmgLen * dmgLen * res));
 				if (fireDamage > 0.025) {
 					if (fireDamage > 0.1 && e instanceof EntityPlayer p) {
 						if (p.getHeldItemMainhand().getItem() == ModItems.marshmallow && p.getRNG().nextInt((int) len) == 0) {
@@ -230,12 +239,12 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				}
 			}
 
-			int blastDuration = (int)Math.ceil(80 * Math.cbrt(this.radius / 100.0));
+			int blastDuration = (int)Math.ceil(80.0 * Math.cbrt(this.radius / 100.0));
 			double shockSpeed = 2D * this.radius / (double)blastDuration;
 			double currentBlastRadius = this.ticksExisted * Math.max(2D, shockSpeed);
 
-			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.ticksExisted <= (shockSpeed < 2D ? this.radius : blastDuration) && res < 10000 && len < currentBlastRadius) {
-				float blastDamage = (float)(Math.pow(radius + 10, 3) * 0.5F * dmgScale) / (float)(dmgLen * dmgLen * dmgLen * res);
+			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.ticksExisted <= blastDuration && res < 10000 && len < currentBlastRadius && len < blastMax) {
+				float blastDamage = (float)(0.5F * dmgScale * energy) / (float)(dmgLen * dmgLen * dmgLen * res);
 				if(blastDamage > 0.025){
 					if(fallout) e.attackEntityFrom(ModDamageSource.nuclearBlast, blastDamage);
 					else e.attackEntityFrom(ModDamageSource.blast, blastDamage);

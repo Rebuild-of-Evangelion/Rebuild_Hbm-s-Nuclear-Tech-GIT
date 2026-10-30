@@ -1,5 +1,6 @@
 package com.hbm.entity.mob;
 
+import static com.hbm.items.ItemEnums.EnumAmmo;
 import com.hbm.interfaces.IRadiationImmune;
 import com.hbm.entity.effect.EntityNukeTorex;
 import com.hbm.entity.logic.EntityNukeExplosionMK5;
@@ -271,7 +272,7 @@ public class EntityNuclearCreeper extends EntityMob implements IRadiationImmune 
 				this.dropItem(ModItems.fusion_core, 1);
 			}
 			if(i == 10)
-				this.dropItem(ModItems.ammo_nuke, 1);
+				this.entityDropItem(new ItemStack(ModItems.ammo_standard, 1, EnumAmmo.NUKE_STANDARD.ordinal()), 0F);
 		}
 
 		super.onDeath(p_70645_1_);

@@ -95,7 +95,6 @@ import com.hbm.render.anim.HbmAnimations;
 import com.hbm.render.anim.HbmAnimations.Animation;
 import com.hbm.render.anim.HbmAnimations.BlenderAnimation;
 import com.hbm.render.entity.DSmokeRenderer;
-import com.hbm.render.entity.RenderBlackHole;
 import com.hbm.render.item.weapon.B92BakedModel;
 import com.hbm.render.item.weapon.ItemRedstoneSwordRender;
 import com.hbm.render.item.weapon.ItemRenderGunAnim;
@@ -109,7 +108,6 @@ import com.hbm.render.misc.SoyuzPronter;
 import com.hbm.render.modelrenderer.EgonBackpackRenderer;
 import com.hbm.render.tileentity.RenderMultiblock;
 import com.hbm.render.tileentity.RenderSoyuzMultiblock;
-import com.hbm.render.entity.effect.RenderTorex;
 import com.hbm.render.tileentity.RenderStructureMarker;
 import com.hbm.render.util.RenderOverhead;
 import com.hbm.render.world.RenderNTMSkybox;
@@ -1617,10 +1615,6 @@ public class ModEventHandlerClient {
 		ClientProxy.deferredRenderers.clear();
 
 		HbmShaderManager2.blitDepth();
-
-		RenderTorex.render(evt.getPartialTicks());
-
-		RenderBlackHole.render(evt.getPartialTicks());
 		
 		ParticleBatchRenderer.renderLast(evt);
 		

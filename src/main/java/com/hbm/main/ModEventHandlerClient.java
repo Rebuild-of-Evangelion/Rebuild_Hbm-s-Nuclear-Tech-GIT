@@ -95,6 +95,7 @@ import com.hbm.render.anim.HbmAnimations;
 import com.hbm.render.anim.HbmAnimations.Animation;
 import com.hbm.render.anim.HbmAnimations.BlenderAnimation;
 import com.hbm.render.entity.DSmokeRenderer;
+import com.hbm.render.entity.RenderBlackHole;
 import com.hbm.render.item.weapon.B92BakedModel;
 import com.hbm.render.item.weapon.ItemRedstoneSwordRender;
 import com.hbm.render.item.weapon.ItemRenderGunAnim;
@@ -108,6 +109,7 @@ import com.hbm.render.misc.SoyuzPronter;
 import com.hbm.render.modelrenderer.EgonBackpackRenderer;
 import com.hbm.render.tileentity.RenderMultiblock;
 import com.hbm.render.tileentity.RenderSoyuzMultiblock;
+import com.hbm.render.entity.effect.RenderTorex;
 import com.hbm.render.tileentity.RenderStructureMarker;
 import com.hbm.render.util.RenderOverhead;
 import com.hbm.render.world.RenderNTMSkybox;
@@ -212,9 +214,9 @@ public class ModEventHandlerClient {
 	public static float deltaMouseY;
 	
 	public static float currentFOV = 70;
-	public static final int flashDuration = 5_000;
-	public static final int shakeDuration = 1_500;
+	public static int flashDuration;
 	public static long flashTimestamp;
+	public static int shakeDuration;
 	public static long shakeTimestamp;
 	public static double shakeMultiplier;
 	
@@ -1615,6 +1617,10 @@ public class ModEventHandlerClient {
 		ClientProxy.deferredRenderers.clear();
 
 		HbmShaderManager2.blitDepth();
+
+		RenderTorex.render(evt.getPartialTicks());
+
+		RenderBlackHole.render(evt.getPartialTicks());
 		
 		ParticleBatchRenderer.renderLast(evt);
 		
@@ -1700,23 +1706,32 @@ public class ModEventHandlerClient {
 		if (event.getType() == ElementType.CROSSHAIRS && (flashTimestamp + flashDuration - System.currentTimeMillis()) > 0) {
 			int width = event.getResolution().getScaledWidth();
 			int height = event.getResolution().getScaledHeight();
+			int buff = -200; // that's for the shake effect - so the flash won't look like offset
+			net.minecraft.client.renderer.Tessellator tess = net.minecraft.client.renderer.Tessellator.getInstance();
+			BufferBuilder buffer = tess.getBuffer();
 			GlStateManager.disableTexture2D();
 			GlStateManager.enableBlend();
 			GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE);
+			GlStateManager.alphaFunc(516, 0.0F);
 			GlStateManager.depthMask(false);
-			net.minecraft.client.renderer.Tessellator tess = net.minecraft.client.renderer.Tessellator.getInstance();
-			net.minecraft.client.renderer.BufferBuilder buffer = tess.getBuffer();
-			float brightness = (flashTimestamp + flashDuration - System.currentTimeMillis()) / (float) flashDuration;
 			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
-			buffer.pos(0, 0, 0).color(1F, 1F, 1F, brightness).endVertex();
-			buffer.pos(0, height, 0).color(1F, 1F, 1F, brightness).endVertex();
-			buffer.pos(width, height, 0).color(1F, 1F, 1F, brightness).endVertex();
-			buffer.pos(width, 0, 0).color(1F, 1F, 1F, brightness).endVertex();
+			float brightness = (flashTimestamp + flashDuration - System.currentTimeMillis()) / (float) flashDuration;
+			buffer.pos(width - buff, buff, 0).color(1F, 1F, 1F, brightness * 0.875F).endVertex();
+			buffer.pos(buff, buff, 0).color(1F, 1F, 1F, brightness * 0.875F).endVertex();
+			buffer.pos(buff, height - buff, 0).color(1F, 1F, 1F, brightness * 0.875F).endVertex();
+			buffer.pos(width - buff, height - buff, 0).color(1F, 1F, 1F, brightness * 0.875F).endVertex();
 			tess.draw();
-			GlStateManager.depthMask(true);
-			GlStateManager.disableBlend();
+			GlStateManager.tryBlendFuncSeparate(770, 771, 1, 0);
 			GlStateManager.enableTexture2D();
-			return;
+			GlStateManager.alphaFunc(GL11.GL_GREATER, 0.1F);
+			GlStateManager.depthMask(true);
+		}
+		// NUKE GUI SHAKE //
+		if (event.getType() == ElementType.HOTBAR && (ModEventHandlerClient.shakeTimestamp + ModEventHandlerClient.shakeDuration - System.currentTimeMillis()) > 0) {
+			double mult = (ModEventHandlerClient.shakeTimestamp + ModEventHandlerClient.shakeDuration - System.currentTimeMillis()) / (double) ModEventHandlerClient.shakeDuration * 2;
+			double horizontal = MathHelper.clamp(Math.sin(System.currentTimeMillis() * 0.02), -0.7, 0.7) * 15 * ModEventHandlerClient.shakeMultiplier;
+			double vertical = MathHelper.clamp(Math.sin(System.currentTimeMillis() * 0.01 + 2), -0.7, 0.7) * 3 * ModEventHandlerClient.shakeMultiplier;
+			GlStateManager.translate(horizontal * mult, vertical * mult, 0);
 		}
 		if (event.getType() == ElementType.CROSSHAIRS && player.getHeldItemMainhand().getItem() == ModItems.gun_supershotgun && !ItemGunShotty.hasHookedEntity(player.world, player.getHeldItemMainhand())) {
 			float x1 = ItemGunShotty.prevScreenPos.x + (ItemGunShotty.screenPos.x - ItemGunShotty.prevScreenPos.x) * event.getPartialTicks();
@@ -1813,13 +1828,6 @@ public class ModEventHandlerClient {
 
 		if(helmet.getItem() instanceof ArmorFSB) {
 			((ArmorFSB)helmet.getItem()).handleOverlay(event, player);
-		}
-		// NUKE GUI SHAKE //
-		if (event.getType() == ElementType.HOTBAR && (ModEventHandlerClient.shakeTimestamp + ModEventHandlerClient.shakeDuration - System.currentTimeMillis()) > 0) {
-			double mult = (ModEventHandlerClient.shakeTimestamp + ModEventHandlerClient.shakeDuration - System.currentTimeMillis()) / (double) ModEventHandlerClient.shakeDuration * 2;
-			double horizontal = MathHelper.clamp(Math.sin(System.currentTimeMillis() * 0.02), -0.7, 0.7) * 15 * ModEventHandlerClient.shakeMultiplier;
-			double vertical = MathHelper.clamp(Math.sin(System.currentTimeMillis() * 0.01 + 2), -0.7, 0.7) * 3 * ModEventHandlerClient.shakeMultiplier;
-			GlStateManager.translate(horizontal * mult, vertical * mult, 0);
 		}
 	}
 	

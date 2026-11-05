@@ -9,6 +9,7 @@ import java.util.Random;
 import com.hbm.blocks.machine.WatzPump;
 import com.hbm.entity.item.EntityMovingPackage;
 import com.hbm.entity.mob.*;
+import com.hbm.render.entity.effect.RenderTorex;
 import com.hbm.handler.*;
 import com.hbm.handler.threading.BombForkJoinPool;
 import com.hbm.inventory.*;
@@ -488,6 +489,7 @@ public class MainRegistry {
 		if(event.getSide() == Side.CLIENT) {
 			HbmKeybinds keyHandler = new HbmKeybinds();
 			MinecraftForge.EVENT_BUS.register(keyHandler);
+			MinecraftForge.EVENT_BUS.register(RenderTorex.class);
 		}
 		
 		PacketDispatcher.registerPackets();

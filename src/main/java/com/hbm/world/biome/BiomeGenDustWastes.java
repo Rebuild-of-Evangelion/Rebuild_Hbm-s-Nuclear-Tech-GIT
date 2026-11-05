@@ -1,9 +1,11 @@
 package com.hbm.world.biome;
 
 import com.hbm.config.WorldConfig;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.settings.GameSettings;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
@@ -90,19 +92,21 @@ public class BiomeGenDustWastes extends Biome {
 	private static long fogTimer = 0;
 
 	@SideOnly(Side.CLIENT)
-	@SubscribeEvent(priority = EventPriority.LOW)
+	@SubscribeEvent(priority = EventPriority.LOWEST)
 	public static void tintFog(EntityViewRenderEvent.FogColors event) {
 		if (!WorldConfig.enableDustWastesBiome) return;
-		EntityPlayer player = Minecraft.getMinecraft().player;
+		Minecraft mc = Minecraft.getMinecraft();
+		EntityPlayer player = mc.player;
 		if (player == null) return;
-		BlockPos headPos = new BlockPos((int) Math.floor(player.posX), (int) Math.floor(player.posY), (int) Math.floor(player.posZ));
-		if (player.world.getBlockState(headPos).getMaterial() != Material.WATER) {
-			Vec3d color = getFogBlendColor(player.world, (int) Math.floor(player.posX), (int) Math.floor(player.posZ), event.getRed(), event.getGreen(), event.getBlue(), event.getRenderPartialTicks());
-			if (color != null) {
-				event.setRed((float) color.x);
-				event.setGreen((float) color.y);
-				event.setBlue((float) color.z);
-			}
+		Entity view = mc.getRenderViewEntity();
+		if (view == null) return;
+		IBlockState viewState = ActiveRenderInfo.getBlockStateAtEntityViewpoint(view.world, view, (float) event.getRenderPartialTicks());
+		if (viewState.getMaterial().isLiquid()) return;
+		Vec3d color = getFogBlendColor(player.world, (int) Math.floor(player.posX), (int) Math.floor(player.posZ), event.getRed(), event.getGreen(), event.getBlue(), event.getRenderPartialTicks());
+		if (color != null) {
+			event.setRed((float) color.x);
+			event.setGreen((float) color.y);
+			event.setBlue((float) color.z);
 		}
 	}
 

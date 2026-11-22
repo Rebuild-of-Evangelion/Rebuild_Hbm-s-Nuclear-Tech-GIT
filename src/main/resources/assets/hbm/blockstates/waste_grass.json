@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "normal": { "model": "hbm:waste_grass" },
+        "meta=0": { "model": "hbm:waste_grass" },
+        "meta=1": { "model": "hbm:waste_grass" },
+        "meta=2": { "model": "hbm:waste_grass" },
+        "meta=3": { "model": "hbm:waste_grass" },
+        "meta=4": { "model": "hbm:waste_grass" },
+        "meta=5": { "model": "hbm:waste_grass" },
+        "meta=6": { "model": "hbm:waste_grass" },
+        "meta=7": { "model": "hbm:waste_grass" }
+    }
+}

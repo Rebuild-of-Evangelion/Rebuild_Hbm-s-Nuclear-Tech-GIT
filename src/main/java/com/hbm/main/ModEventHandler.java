@@ -1185,6 +1185,22 @@ public class ModEventHandler {
 				mapping.remap(ModItems.ammo_standard);
 			} else if(path.startsWith("clip_") || path.equals("ammo_container")) {
 				mapping.remap(ModItems.clip_standard);
+			} else if(path.equals("waste_earth")) {
+				mapping.remap(Item.getItemFromBlock(ModBlocks.waste_grass));
+			} else if(path.equals("waste_grass_tall")) {
+				mapping.remap(Item.getItemFromBlock(ModBlocks.waste_tall_grass));
+			}
+		}
+	}
+
+	@SubscribeEvent
+	public void onMissingMappingsBlock(RegistryEvent.MissingMappings<Block> evt) {
+		for(RegistryEvent.MissingMappings.Mapping<Block> mapping : evt.getMappings()) {
+			String path = mapping.key.getPath();
+			if(path.equals("waste_earth")) {
+				mapping.remap(ModBlocks.waste_grass);
+			} else if(path.equals("waste_grass_tall")) {
+				mapping.remap(ModBlocks.waste_tall_grass);
 			}
 		}
 	}

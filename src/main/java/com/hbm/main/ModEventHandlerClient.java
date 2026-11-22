@@ -389,6 +389,7 @@ public class ModEventHandlerClient {
 
 		IDynamicModels.bakeModels(evt);
 
+
 		for(EnumCanister e : EnumCanister.values()) {
 			Object o = evt.getModelRegistry().getObject(e.getResourceLocation());
 			if(o instanceof IBakedModel)

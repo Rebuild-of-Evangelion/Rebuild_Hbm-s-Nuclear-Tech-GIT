@@ -70,7 +70,7 @@ public class BlockGasRadonDense extends BlockGasBase {
 			
 			if(rand.nextInt(10) == 0) {
 				if(world.getBlockState(pos.down()).getBlock() == Blocks.GRASS)
-					world.setBlockState(pos.down(), ModBlocks.waste_earth.getDefaultState());
+					world.setBlockState(pos.down(), ModBlocks.waste_grass.getDefaultState());
 			}
 	
 			if(rand.nextInt(20) == 0) {
@@ -86,5 +86,4 @@ public class BlockGasRadonDense extends BlockGasBase {
 		
 		super.updateTick(world, pos, state, rand);
 	}
-	
 }

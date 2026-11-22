@@ -100,7 +100,7 @@ public class BlockGasRadonTomb extends BlockGasBase {
 					if(rand.nextInt(5) == 0)
 						world.setBlockState(pos.down(), Blocks.DIRT.getDefaultState().withProperty(BlockDirt.VARIANT, BlockDirt.DirtType.COARSE_DIRT), 3);
 					else
-						world.setBlockState(pos.down(), ModBlocks.waste_earth.getDefaultState());
+						world.setBlockState(pos.down(), ModBlocks.waste_grass.getDefaultState());
 				}
 				
 				if((state2.getMaterial() == Material.GRASS || state2.getMaterial() == Material.LEAVES || state2.getMaterial() == Material.PLANTS || state2.getMaterial() == Material.VINE) && !state2.isNormalCube())

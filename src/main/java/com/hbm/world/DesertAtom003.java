@@ -52,7 +52,7 @@ public class DesertAtom003
     Block Block20 = ModBlocks.barrel_iron;
     Block Block21 = ModBlocks.barrel_corroded;
 	Block Block22 = ModBlocks.reinforced_brick;
-	Block Block23 = ModBlocks.waste_earth;
+	Block Block23 = ModBlocks.waste_grass;
 	Block Block24 = ModBlocks.deco_lead;
 	Block Block25 = ModBlocks.red_wire_coated;
 	Block Block26 = ModBlocks.block_uranium;
@@ -1767,5 +1767,4 @@ public class DesertAtom003
 		return true;
 
 	}
-
 }

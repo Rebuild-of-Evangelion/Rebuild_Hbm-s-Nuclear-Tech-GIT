@@ -410,7 +410,7 @@ public class HazardRegistry {
 
 		for(int i=0; i<7; i++){
 			registerHazItem(new ItemStack(waste_mycelium, 1, i), (i+1) * 7.5F);
-			registerHazItem(new ItemStack(waste_earth, 1, i), (i+1) * 4);
+			registerHazItem(new ItemStack(waste_grass, 1, i), (i+1) * 4);
 			registerHazItem(new ItemStack(waste_dirt, 1, i), (i+1));
 			registerHazItem(new ItemStack(waste_gravel, 1, i), (i+1) * 2.5F);
 			registerHazItem(new ItemStack(waste_sandstone, 1, i), (i+1) * 2.5F);
@@ -421,7 +421,7 @@ public class HazardRegistry {
 			registerHazItem(new ItemStack(waste_trinitite_red, 1, i), (i+1) * 10);
 			registerHazItem(new ItemStack(waste_clay, 1, i), (i+1) * 2.5F);
 			registerHazItem(new ItemStack(waste_terracotta, 1, i), (i+1) * 2.5F);
-			registerHazItem(new ItemStack(waste_grass_tall, 1, i), (i+1) * 2.5F);
+			registerHazItem(new ItemStack(waste_tall_grass, 1, i), (i+1) * 2.5F);
 			registerHazItem(new ItemStack(waste_snow, 1, i), (i+1) * 0.15F);
 			registerHazItem(new ItemStack(waste_snow_block, 1, i), (i+1) * 1.5F);
 		}

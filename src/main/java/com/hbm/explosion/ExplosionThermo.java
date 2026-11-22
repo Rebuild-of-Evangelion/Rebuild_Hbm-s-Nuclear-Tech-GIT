@@ -307,7 +307,7 @@ public class ExplosionThermo {
 		} else if(block == ModBlocks.frozen_dirt){
 			world.setBlockState(pos, Blocks.DIRT.getDefaultState());
 		
-		} else if(block == ModBlocks.waste_earth){
+		} else if(block == ModBlocks.waste_grass){
 			world.setBlockState(pos, Blocks.NETHERRACK.getDefaultState());
 		
 		} else if(block == ModBlocks.frozen_log){

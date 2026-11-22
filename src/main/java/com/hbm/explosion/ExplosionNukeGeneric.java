@@ -237,7 +237,7 @@ public class ExplosionNukeGeneric {
 			}
 
 			else if (b == Blocks.GRASS) {
-				world.setBlockState(pos, ModBlocks.waste_earth.getDefaultState());
+				world.setBlockState(pos, ModBlocks.waste_grass.getDefaultState());
 			}
 
 			else if (b == Blocks.MYCELIUM) {
@@ -431,7 +431,7 @@ public class ExplosionNukeGeneric {
 			}
 
 			else if (b == Blocks.GRASS) {
-				world.setBlockState(pos, ModBlocks.waste_earth.getDefaultState());
+				world.setBlockState(pos, ModBlocks.waste_grass.getDefaultState());
 			}
 
 			else if (b == Blocks.MYCELIUM) {
@@ -656,7 +656,7 @@ public class ExplosionNukeGeneric {
 				return;
 			}
 			
-			if(b.getBlock() == Blocks.GRASS || b.getBlock() == Blocks.DIRT || b.getBlock() == Blocks.MYCELIUM || b.getBlock() == ModBlocks.waste_earth || b.getBlock() == ModBlocks.waste_dirt || b.getBlock() == ModBlocks.waste_mycelium) {
+			if(b.getBlock() == Blocks.GRASS || b.getBlock() == Blocks.DIRT || b.getBlock() == Blocks.MYCELIUM || b.getBlock() == ModBlocks.waste_grass || b.getBlock() == ModBlocks.waste_dirt || b.getBlock() == ModBlocks.waste_mycelium) {
 				if(random.nextInt(5) < 2)
 					world.setBlockState(pos, Blocks.DIRT.getStateFromMeta(1));
 				else

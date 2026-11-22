@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.generic.WasteDirt;
 import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.config.CompatibilityConfig;
 import com.hbm.entity.grenade.EntityGrenadeTau;
@@ -933,12 +934,16 @@ public class ExplosionChaos {
 		IBlockState b = world.getBlockState(pos);
 		Block bblock = b.getBlock();
 
-		if(bblock == ModBlocks.waste_earth && random.nextInt(3) != 0) {
+		if(bblock == ModBlocks.waste_grass && random.nextInt(3) != 0) {
 			world.setBlockState(pos, Blocks.GRASS.getDefaultState());
 		}
 
 		else if(bblock == ModBlocks.waste_dirt && random.nextInt(3) != 0) {
-			world.setBlockState(pos, Blocks.DIRT.getDefaultState());
+			if(b.getValue(WasteDirt.VARIANT) == WasteDirt.Variant.PODZOL) {
+				world.setBlockState(pos, Blocks.DIRT.getDefaultState().withProperty(BlockDirt.VARIANT, BlockDirt.DirtType.PODZOL));
+			} else {
+				world.setBlockState(pos, Blocks.DIRT.getDefaultState());
+			}
 		}
 
 		else if(bblock == ModBlocks.waste_sand && random.nextInt(3) != 0) {
@@ -949,20 +954,24 @@ public class ExplosionChaos {
 			world.setBlockState(pos, Blocks.SAND.getStateFromMeta(1));
 		}
 		
-		else if(bblock == Blocks.SANDSTONE && random.nextInt(3) != 0) {
-				world.setBlockState(pos, ModBlocks.waste_sandstone.getDefaultState());
-		} 
-		
-		else if((bblock == Blocks.HARDENED_CLAY || bblock == Blocks.STAINED_HARDENED_CLAY) && random.nextInt(3) != 0) {
-			world.setBlockState(pos, ModBlocks.waste_sandstone_red.getDefaultState());
+		else if(bblock == ModBlocks.waste_sandstone && random.nextInt(3) != 0) {
+				world.setBlockState(pos, Blocks.SANDSTONE.getDefaultState());
 		}
 
-		else if(bblock == Blocks.RED_SANDSTONE && random.nextInt(3) != 0) {
-			world.setBlockState(pos, ModBlocks.waste_sandstone_red.getDefaultState());
+		else if((bblock == ModBlocks.waste_clay) && random.nextInt(3) != 0) {
+			world.setBlockState(pos, Blocks.CLAY.getDefaultState());
 		}
 		
-		else if(bblock == ModBlocks.waste_grass_tall && random.nextInt(3) != 0) {
-			world.setBlockState(pos, Blocks.TALLGRASS.getDefaultState());
+		else if((bblock == ModBlocks.waste_terracotta) && random.nextInt(3) != 0) {
+			world.setBlockState(pos, Blocks.HARDENED_CLAY.getDefaultState());
+		}
+
+		else if(bblock == ModBlocks.waste_sandstone_red && random.nextInt(3) != 0) {
+			world.setBlockState(pos, Blocks.RED_SANDSTONE.getDefaultState());
+		}
+		
+		else if(bblock == ModBlocks.waste_tall_grass && random.nextInt(3) != 0) {
+			world.setBlockState(pos, Blocks.TALLGRASS.getDefaultState().withProperty(BlockTallGrass.TYPE, BlockTallGrass.EnumType.GRASS));
 		}
 
 		else if(bblock == ModBlocks.waste_gravel && random.nextInt(3) != 0) {

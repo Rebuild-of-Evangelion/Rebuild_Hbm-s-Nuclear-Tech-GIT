@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map.Entry;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.blocks.generic.WasteDirt;
 import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.config.GeneralConfig;
 import com.hbm.config.RadiationConfig;
@@ -65,10 +66,16 @@ public class RadiationWorldHandler {
 
 								if(!world.isAirBlock(pos)){
 									if(bblock == Blocks.GRASS) {
-										world.setBlockState(pos, ModBlocks.waste_earth.getDefaultState());
+										world.setBlockState(pos, ModBlocks.waste_grass.getDefaultState());
 									
 									} else if(bblock == Blocks.DIRT || bblock == Blocks.FARMLAND) {
-										world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+										if(bblock == Blocks.DIRT && b.getValue(BlockDirt.VARIANT) == BlockDirt.DirtType.PODZOL) {
+											world.setBlockState(pos, WasteDirt.podzolState(0));
+										} else {
+											world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+										}
+									} else if(bblock == Blocks.CLAY) {
+										world.setBlockState(pos, ModBlocks.waste_clay.getDefaultState());
 									} else if(bblock == Blocks.SANDSTONE) {
 										world.setBlockState(pos, ModBlocks.waste_sandstone.getDefaultState());
 									} else if(bblock == Blocks.RED_SANDSTONE) {
@@ -94,7 +101,7 @@ public class RadiationWorldHandler {
 										world.setBlockState(pos, ModBlocks.waste_ice.getDefaultState());
 
 									} else if(bblock instanceof BlockBush) {
-										world.setBlockState(pos, ModBlocks.waste_grass_tall.getDefaultState());
+										world.setBlockState(pos, ModBlocks.waste_tall_grass.getDefaultState());
 									
 									} else if(bblock == ModBlocks.waste_leaves) {
 										if(world.rand.nextInt(8) == 0) {
@@ -160,10 +167,16 @@ public class RadiationWorldHandler {
 
 					if(!world.isAirBlock(pos)){
 						if(bblock == Blocks.GRASS) {
-							world.setBlockState(pos, ModBlocks.waste_earth.getDefaultState());
+							world.setBlockState(pos, ModBlocks.waste_grass.getDefaultState());
 						
 						} else if(bblock == Blocks.DIRT) {
-							world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+							if(c.getValue(BlockDirt.VARIANT) == BlockDirt.DirtType.PODZOL) {
+								world.setBlockState(pos, WasteDirt.podzolState(0));
+							} else {
+								world.setBlockState(pos, ModBlocks.waste_dirt.getDefaultState());
+							}
+						} else if(bblock == Blocks.CLAY) {
+							world.setBlockState(pos, ModBlocks.waste_clay.getDefaultState());
 
 						} else if(bblock == Blocks.SAND) {
 							BlockSand.EnumType meta = c.getValue(BlockSand.VARIANT);
@@ -194,7 +207,7 @@ public class RadiationWorldHandler {
 							world.setBlockState(pos, ModBlocks.waste_ice.getDefaultState());
 
 						} else if(bblock instanceof BlockBush) {
-							world.setBlockState(pos, ModBlocks.waste_grass_tall.getDefaultState());
+							world.setBlockState(pos, ModBlocks.waste_tall_grass.getDefaultState());
 						
 						} else if(bblock == ModBlocks.waste_leaves) {
 							if(world.rand.nextInt(8) == 0) {

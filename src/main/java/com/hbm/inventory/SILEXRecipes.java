@@ -831,7 +831,7 @@ public class SILEXRecipes {
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.powder_sr90_tiny), 4))
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.powder_i131_tiny), 3))
 				);
-		recipes.put(new ComparableStack(ModBlocks.waste_earth, 1), new SILEXRecipe(100, 640, EnumWavelengths.VISIBLE)
+		recipes.put(new ComparableStack(ModBlocks.waste_grass, 1), new SILEXRecipe(100, 640, EnumWavelengths.VISIBLE)
 				.addOut(new WeightedRandomObject(new ItemStack(Blocks.DIRT), 54))
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.nuclear_waste_tiny), 30))
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.fallout), 10))

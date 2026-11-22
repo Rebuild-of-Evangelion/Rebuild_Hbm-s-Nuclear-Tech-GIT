@@ -6,34 +6,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
 
 import org.lwjgl.opengl.GL11;
 
-import com.hbm.blocks.ModBlocks;
-import com.hbm.blocks.generic.WasteDirt;
-import com.hbm.blocks.generic.WasteEarth;
-import com.hbm.blocks.generic.WasteLeaves;
 import com.hbm.dynamic_texture.DynamicTextureData.ItemModelBinding;
 import com.hbm.dynamic_texture.DynamicTextureData.Layer;
 import com.hbm.dynamic_texture.DynamicTextureData.TextureRegion;
 import com.hbm.dynamic_texture.DynamicTextureData.Tint;
 import com.hbm.dynamic_texture.DynamicTextureData.TintMode;
 import com.hbm.dynamic_texture.DynamicTextureData.TintParams;
-import com.hbm.dynamic_texture.DynamicTextureData.Transform;
 import com.hbm.lib.RefStrings;
 import com.hbm.main.ResourceManager;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.ChunkCache;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import net.minecraftforge.client.event.ColorHandlerEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.fml.client.FMLClientHandler;
@@ -43,7 +41,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public final class DynamicTextureRegistry {
 
-	private static final Map<Block, DynamicTextureData> BLOCK_ENTRIES = new LinkedHashMap<>();
 	private static final Map<ResourceLocation, DynamicTextureData> TEXTURE_ENTRIES = new LinkedHashMap<>();
 	private static final Map<String, Integer> TEXTURE_CACHE = new HashMap<>();
 
@@ -52,147 +49,13 @@ public final class DynamicTextureRegistry {
 		registerExternalTextures();
 	}
 
-	private DynamicTextureRegistry() { }
-
-	public static void registerBlock(Block block, DynamicTextureData data) {
-		BLOCK_ENTRIES.put(block, data);
-	}
-
 	public static void registerTexture(ResourceLocation base, DynamicTextureData data) {
 		data.base(base);
 		TEXTURE_ENTRIES.put(base, data);
 	}
 
-	private static void addMetaBlock(Block block, int[] curve) {
-		registerBlock(block, new DynamicTextureData()
-				.blockTint(new Tint(-1, curve))
-				.itemTint(new Tint(-1, curve)));
-	}
-
 	private static void registerBlocks() {
-		// sprite-only blocks
-		registerBlock(ModBlocks.waste_trinitite, new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/contamination/trinitite/trinitite_gen", Transform.MULTIPASS)
-						.source("minecraft:blocks/sand").source("hbm:blocks/trinitite_overlay"))
-				.blockTint(new Tint(-1, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740)))
-				.itemTint(new Tint(-1, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740))));
-		registerBlock(ModBlocks.waste_trinitite_red, new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/contamination/red_trinitite/trinitite_red_gen", Transform.MULTIPASS)
-						.source("minecraft:blocks/red_sand").source("hbm:blocks/trinitite_overlay"))
-				.blockTint(new Tint(-1, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740)))
-				.itemTint(new Tint(-1, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740))));
-		registerBlock(ModBlocks.waste_ice, new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/waste_ice_gen", Transform.GRAYSCALE)
-						.source("minecraft:blocks/ice")));
-
-		// mushroom sprites
-		DynamicTextureData mushrooms = new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/mush_block_skin_gen", Transform.HUE_SHIFT)
-						.source("minecraft:blocks/mushroom_block_skin_brown").param(85f / 360f).param(1f))
-				.layer(new Layer("hbm:blocks/mush_block_stem_gen", Transform.HUE_SHIFT)
-						.source("minecraft:blocks/mushroom_block_skin_stem").param(85f / 360f).param(1f))
-				.layer(new Layer("hbm:blocks/mush_block_inside_gen", Transform.HUE_SHIFT)
-						.source("minecraft:blocks/mushroom_block_inside").param(85f / 360f).param(1f))
-				.layer(new Layer("hbm:blocks/mush_block_red_skin_gen", Transform.HUE_SHIFT)
-						.source("minecraft:blocks/mushroom_block_skin_red").param(85f / 360f).param(1f));
-		registerBlock(ModBlocks.mush_block, mushrooms);
-
-		// simple meta blocks
-		addMetaBlock(ModBlocks.waste_gravel, DynamicTextureData.ratioCurve(0x7F7C7B, 0x323231));
-		addMetaBlock(ModBlocks.waste_sand, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740));
-		addMetaBlock(ModBlocks.waste_sand_red, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740));
-		addMetaBlock(ModBlocks.waste_snow_block, DynamicTextureData.ratioCurve(0xE4EEEE, 0x6F7070));
-		addMetaBlock(ModBlocks.waste_clay, DynamicTextureData.luminanceCurve(0xA25426, 0x32251E));
-		addMetaBlock(ModBlocks.waste_terracotta, DynamicTextureData.ratioCurve(0xA25426, 0x32251E));
-		addMetaBlock(ModBlocks.waste_sandstone, DynamicTextureData.ratioCurve(0xC3BD8E, 0x48473F));
-		addMetaBlock(ModBlocks.waste_sandstone_red, DynamicTextureData.ratioCurve(0x954C1B, 0x2D2119));
-
-		// fallout
-		registerBlock(ModBlocks.fallout, new DynamicTextureData()
-				.blockTint(new Tint(-1, DynamicTextureData.of(0xFFFFFF, 0xEFEFEF, 0xDFDFDF, 0xC4C4C4, 0xB1B1B1, 0x949494, 0x7B7B7B)))
-				.itemTint(new Tint(-1, DynamicTextureData.of(0xFFFFFF, 0xEFEFEF, 0xDFDFDF, 0xC4C4C4, 0xB1B1B1, 0x949494, 0x7B7B7B))));
-		registerBlock(ModBlocks.block_fallout, new DynamicTextureData()
-				.blockTint(Tint.fixed(-1, 0xFFFFFF))
-				.itemTint(Tint.fixed(-1, 0xFFFFFF)));
-
-		// waste earth
-		int[] grass = DynamicTextureData.directCurve(0x6F6752, 0x303030);
-		int[] dirt = DynamicTextureData.ratioCurve(0x866043, 0x2E2723);
-		registerBlock(ModBlocks.waste_earth, new DynamicTextureData()
-				.blockTint(new Tint(2, grass))
-				.blockTint(new Tint(3, grass))
-				.blockTint(new Tint(-1, dirt))
-				.itemTint(new Tint(2, grass))
-				.itemTint(new Tint(3, grass))
-				.itemTint(new Tint(-1, dirt)));
-
-		// grass tall
-		int[] grassTall = DynamicTextureData.ratioCurve(0x8C7A53, 0x5C5340);
-		registerBlock(ModBlocks.waste_grass_tall, new DynamicTextureData()
-				.blockTint(new Tint(0, grassTall).op(color -> DynamicTextureData.mulColor(color, 0xFFE59B)))
-				.blockTint(new Tint(-1, grassTall))
-				.itemTint(new Tint(0, grassTall).op(color -> DynamicTextureData.mulColor(color, 0xFFE59B)))
-				.itemTint(new Tint(-1, grassTall)));
-
-		// leaves
-		DynamicTextureData leaves = new DynamicTextureData();
-		leaves.blockTint(Tint.fixed(-1, 0xE69160).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 0));
-		leaves.blockTint(Tint.fixed(-1, 0xB37F5A).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 1));
-		leaves.blockTint(Tint.fixed(-1, 0xE6A860).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 2));
-		leaves.blockTint(Tint.fixed(-1, 0xE37B65).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 3));
-		leaves.blockTint(Tint.fixed(-1, 0xF28D54).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 4));
-		leaves.blockTint(Tint.fixed(-1, 0xE6A04E).filter(state -> state.getValue(WasteLeaves.VARIANT).getMetadata() == 5));
-		leaves.itemTint(Tint.fixed(-1, 0xE69160).itemFilter(damage -> damage == 0));
-		leaves.itemTint(Tint.fixed(-1, 0xB37F5A).itemFilter(damage -> damage == 1));
-		leaves.itemTint(Tint.fixed(-1, 0xE6A860).itemFilter(damage -> damage == 2));
-		leaves.itemTint(Tint.fixed(-1, 0xE37B65).itemFilter(damage -> damage == 3));
-		leaves.itemTint(Tint.fixed(-1, 0xF28D54).itemFilter(damage -> damage == 4));
-		leaves.itemTint(Tint.fixed(-1, 0xE6A04E).itemFilter(damage -> damage == 5));
-		registerBlock(ModBlocks.waste_leaves, leaves);
-
-		// mycelium
-		DynamicTextureData mycelium = new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/contamination/mycelium/waste_mycelium_side_gen", Transform.MYCELIUM_DIRT)
-						.source("minecraft:blocks/dirt").source("hbm:blocks/contamination/mycelium/waste_mycelium_overlay"))
-				.blockTint(Tint.fixed(0, 0xFFFFFF))
-				.blockTint(new Tint(-1, dirt))
-				.itemTint(Tint.fixed(0, 0xFFFFFF))
-				.itemTint(new Tint(-1, dirt));
-		for(int m = 0; m <= 6; m++) {
-			mycelium.layer(new Layer("hbm:blocks/contamination/mycelium/waste_mycelium_particle_gen_" + m, Transform.MYCELIUM_PARTICLE)
-					.source("minecraft:blocks/dirt").source("hbm:blocks/contamination/mycelium/waste_mycelium_overlay")
-					.param(dirt[m]).metaRange(m, m));
-		}
-		registerBlock(ModBlocks.waste_mycelium, mycelium);
-
-		// waste dirt + podzol
-		int[] podzol = DynamicTextureData.ratioCurve(0x6F6752, 0x303030);
-		DynamicTextureData wasteDirt = new DynamicTextureData()
-				.itemModel(0, 0, new ModelResourceLocation("hbm:waste_dirt", "inventory"))
-				.itemModel(1, 1, new ModelResourceLocation("hbm:waste_podzol", "inventory"))
-				.blockTint(new Tint(2, podzol)
-						.filter(state -> state.getValue(WasteDirt.VARIANT) == WasteDirt.Variant.PODZOL)
-						.meta(state -> state.getValue(WasteEarth.META)))
-				.blockTint(Tint.fixed(0, 0xFFFFFF)
-						.filter(state -> state.getValue(WasteDirt.VARIANT) == WasteDirt.Variant.PODZOL))
-				.blockTint(new Tint(1, dirt)
-						.filter(state -> state.getValue(WasteDirt.VARIANT) == WasteDirt.Variant.PODZOL)
-						.meta(state -> state.getValue(WasteEarth.META)))
-				.blockTint(new Tint(-1, dirt))
-				.itemTint(new Tint(2, podzol)
-						.itemFilter(damage -> damage == 1)
-						.itemMeta(damage -> 0))
-				.itemTint(Tint.fixed(0, 0xFFFFFF)
-						.itemFilter(damage -> damage == 1))
-				.itemTint(new Tint(1, dirt)
-						.itemFilter(damage -> damage == 1))
-				.itemTint(new Tint(-1, dirt));
-		for(int m = 0; m <= 6; m++) {
-			wasteDirt.layer(new Layer("hbm:blocks/contamination/podzol/waste_podzol_particle_gen_" + m, Transform.OVERLAY_PARTICLE)
-					.source("minecraft:blocks/dirt").source("hbm:blocks/contamination/podzol/waste_podzol_overlay")
-					.param(dirt[m]).param(podzol[m]).metaRange(m, m));
-		}
-		registerBlock(ModBlocks.waste_dirt, wasteDirt);
+		DynamicTextureData.registerDefaults();
 	}
 
 	private static void registerExternalTextures() {
@@ -224,7 +87,7 @@ public final class DynamicTextureRegistry {
 	@SideOnly(Side.CLIENT)
 	public static void registerSprites(TextureStitchEvent.Pre evt) {
 		clearTextureCache();
-		for(DynamicTextureData data : BLOCK_ENTRIES.values()) {
+		for(DynamicTextureData data : DynamicTextureData.BLOCK_DATA.values()) {
 			for(Layer layer : data.layers) {
 				for(int meta = layer.metaFrom; meta <= layer.metaTo; meta++) {
 					evt.getMap().setTextureEntry(layer.transform.create(layer.name(meta), layer.sources(), layer.params()));
@@ -235,20 +98,35 @@ public final class DynamicTextureRegistry {
 
 	@SideOnly(Side.CLIENT)
 	public static void registerBlockColors(ColorHandlerEvent.Block evt) {
-		for(Map.Entry<Block, DynamicTextureData> entry : BLOCK_ENTRIES.entrySet()) {
+		for(Map.Entry<Block, DynamicTextureData> entry : DynamicTextureData.BLOCK_DATA.entrySet()) {
 			if(entry.getValue().blockTints.isEmpty()) continue;
 			evt.getBlockColors().registerBlockColorHandler((state, world, pos, tintIndex) -> {
+				int index = externalQuery(world) ? representativeIndex(entry.getValue().blockTints, tintIndex) : tintIndex;
 				for(Tint tint : entry.getValue().blockTints) {
-					if(tint.matchesBlock(state, tintIndex)) return tint.color(state);
+					if(tint.matchesBlock(state, index)) return tint.color(state);
 				}
 				return 0xFFFFFF;
 			}, entry.getKey());
 		}
 	}
 
+	/** Map mods query colours through a stand-in block access and a fixed tint index; report the top-face tint instead. */
+	private static boolean externalQuery(IBlockAccess world) {
+		return world != null && !(world instanceof World) && !(world instanceof ChunkCache);
+	}
+
+	private static int representativeIndex(List<Tint> tints, int fallback) {
+		boolean top = false, primary = false;
+		for(Tint tint : tints) {
+			if(tint.index == 2) top = true;
+			else if(tint.index == 0) primary = true;
+		}
+		return top ? 2 : (primary ? 0 : fallback);
+	}
+
 	@SideOnly(Side.CLIENT)
 	public static void registerItemColors(ColorHandlerEvent.Item evt) {
-		for(Map.Entry<Block, DynamicTextureData> entry : BLOCK_ENTRIES.entrySet()) {
+		for(Map.Entry<Block, DynamicTextureData> entry : DynamicTextureData.BLOCK_DATA.entrySet()) {
 			if(entry.getValue().itemTints.isEmpty()) continue;
 			Item item = Item.getItemFromBlock(entry.getKey());
 			if(item == null) continue;
@@ -263,7 +141,7 @@ public final class DynamicTextureRegistry {
 
 	@SideOnly(Side.CLIENT)
 	public static void registerItemModels() {
-		for(Map.Entry<Block, DynamicTextureData> entry : BLOCK_ENTRIES.entrySet()) {
+		for(Map.Entry<Block, DynamicTextureData> entry : DynamicTextureData.BLOCK_DATA.entrySet()) {
 			if(entry.getValue().itemModels.isEmpty()) continue;
 			Item item = Item.getItemFromBlock(entry.getKey());
 			if(item == null) continue;

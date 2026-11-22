@@ -5,6 +5,7 @@ import java.util.Locale;
 import com.hbm.blocks.ModBlocks;
 
 import net.minecraft.block.SoundType;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.properties.PropertyEnum;
@@ -16,11 +17,12 @@ import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.IStringSerializable;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-public class WasteDirt extends WasteEarth {
+public class WasteDirt extends WasteBlockGrass {
 
 	public static final PropertyEnum<Variant> VARIANT = PropertyEnum.create("variant", Variant.class);
 
@@ -98,5 +100,12 @@ public class WasteDirt extends WasteEarth {
 	@SideOnly(Side.CLIENT)
 	public BlockRenderLayer getRenderLayer() {
 		return BlockRenderLayer.CUTOUT_MIPPED;
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(state.getValue(VARIANT) == Variant.PODZOL) return MapColor.BROWN_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.waste_dirt) return MapColor.DIRT;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

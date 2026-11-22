@@ -10,6 +10,7 @@ import com.hbm.main.MainRegistry;
 import com.hbm.saveddata.RadiationSavedData;
 import com.hbm.potion.HbmPotion;
 
+import net.minecraft.block.material.MapColor;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
@@ -34,10 +35,10 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 public class BlockHazard extends BlockBase {
-	
+
 	public float radIn = 0.0F;
 	public ExtDisplayEffect extEffect = null;
-	
+
 	public boolean beaconable = false;
 
 	private static final HazardBlockHandler HANDLER = new HazardBlockHandler();
@@ -92,7 +93,7 @@ public class BlockHazard extends BlockBase {
 		this(Material.IRON, s);
 		setSoundType(type);
 	}
-	
+
 	public BlockHazard setDisplayEffect(ExtDisplayEffect extEffect) {
 		this.extEffect = extEffect;
 		return this;
@@ -105,25 +106,25 @@ public class BlockHazard extends BlockBase {
 
 		if(extEffect == null)
 			return;
-		
+
 		switch(extEffect) {
 		case RADFOG:
 		case SCHRAB:
 		case FLAMES:
 			sPart(worldIn, pos.getX(), pos.getY(), pos.getZ(), rand);
 			break;
-			
+
 		case SPARKS:
 			break;
-			
+
 		case LAVAPOP:
 			worldIn.spawnParticle(EnumParticleTypes.LAVA, pos.getX() + rand.nextFloat(), pos.getY() + 1.1F, pos.getZ() + rand.nextFloat(), 0.0D, 0.0D, 0.0D);
 			break;
-			
+
 		default: break;
 		}
 	}
-	
+
 	public void sPart(World world, int x, int y, int z, Random rand) {
 
 		for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
@@ -178,7 +179,7 @@ public class BlockHazard extends BlockBase {
 	public boolean isBeaconBase(IBlockAccess worldObj, BlockPos pos, BlockPos beacon){
 		return beaconable;
 	}
-	
+
 	@Override
 	public void updateTick(World worldIn, BlockPos pos, IBlockState state, Random rand){
 		if(!worldIn.isRemote) {
@@ -193,7 +194,7 @@ public class BlockHazard extends BlockBase {
 		}
 	}
 
-	
+
 	@Override
 	public int tickRate(World world) {
 		if(this.radIn > 0)
@@ -217,7 +218,7 @@ public class BlockHazard extends BlockBase {
         		world.setBlockState(pos, Blocks.LAVA.getDefaultState());
         }
 	}
-	
+
 	public enum ExtDisplayEffect {
 		RADFOG,
 		SPARKS,
@@ -237,5 +238,12 @@ public class BlockHazard extends BlockBase {
 			return Items.SNOWBALL;
 		}
 		return Item.getItemFromBlock(this);
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.frozen_planks) return MapColor.CLAY;
+		if(this == ModBlocks.frozen_dirt) return MapColor.CLAY;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

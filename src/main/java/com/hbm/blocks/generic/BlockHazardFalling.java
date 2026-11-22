@@ -8,6 +8,7 @@ import com.hbm.hazard.HazardSystem;
 
 import net.minecraft.block.BlockFalling;
 import net.minecraft.block.SoundType;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
@@ -89,5 +90,16 @@ public class BlockHazardFalling extends BlockFalling {
 	public void onEntityCollision(World worldIn, BlockPos pos, IBlockState state, Entity entity){
 		if(entity instanceof EntityLivingBase)
 			HazardSystem.applyHazards(this, (EntityLivingBase)entity);
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.block_fallout) return MapColor.GRAY;
+		if(this == ModBlocks.ash_digamma) return MapColor.SILVER;
+		if(this == ModBlocks.block_yellowcake) return MapColor.YELLOW_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.sand_uranium) return MapColor.IRON;
+		if(this == ModBlocks.sand_polonium) return MapColor.SILVER_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.sand_gold198) return MapColor.YELLOW;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

@@ -11,6 +11,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockBush;
 import net.minecraft.block.IGrowable;
 import net.minecraft.block.SoundType;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.EnumFacing;
@@ -42,7 +43,7 @@ public class BlockMush extends BlockBush implements IGrowable {
 		if (pos.getY() >= 0 && pos.getY() < 256)
         {
             Block block = world.getBlockState(pos.down()).getBlock();
-            return block == ModBlocks.waste_earth || block == ModBlocks.waste_mycelium || block == ModBlocks.waste_dirt;
+            return block == ModBlocks.waste_grass || block == ModBlocks.waste_mycelium || block == ModBlocks.waste_dirt;
         }
         else
         {
@@ -68,7 +69,7 @@ public class BlockMush extends BlockBush implements IGrowable {
 	@Override
 	public void updateTick(World worldIn, BlockPos pos, IBlockState state, Random rand) {
 		this.checkAndDropBlock(worldIn, pos, state);
-		if(GeneralConfig.enableMycelium && (worldIn.getBlockState(pos.down()).getBlock() == ModBlocks.waste_mycelium || worldIn.getBlockState(pos.down()).getBlock() == ModBlocks.waste_earth) && rand.nextInt(5) == 0){
+		if(GeneralConfig.enableMycelium && (worldIn.getBlockState(pos.down()).getBlock() == ModBlocks.waste_mycelium || worldIn.getBlockState(pos.down()).getBlock() == ModBlocks.waste_grass) && rand.nextInt(5) == 0){
 			worldIn.setBlockState(pos.down(), ModBlocks.waste_mycelium.getDefaultState());
 		}
 		
@@ -97,5 +98,11 @@ public class BlockMush extends BlockBush implements IGrowable {
         worldgenbigmushroom.generate(worldIn, rand, pos);
         
         return true;
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.mush) return MapColor.LIME;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

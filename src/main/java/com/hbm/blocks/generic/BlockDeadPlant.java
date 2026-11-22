@@ -42,9 +42,8 @@ public class BlockDeadPlant extends BlockBush
 
     public boolean canBlockStay(World world, BlockPos pos, IBlockState state) {
         Block block = world.getBlockState(pos.down()).getBlock();
-        return block == Blocks.GRASS || block == Blocks.DIRT || block == ModBlocks.waste_earth || block == ModBlocks.waste_dirt || block == ModBlocks.dirt_dead || block == ModBlocks.dirt_oily;
+        return block == Blocks.GRASS || block == Blocks.DIRT || block == ModBlocks.waste_grass || block == ModBlocks.waste_dirt || block == ModBlocks.dirt_dead || block == ModBlocks.dirt_oily;
     }
-
 
     @Override
     public Block setSoundType(SoundType sound){
@@ -55,8 +54,6 @@ public class BlockDeadPlant extends BlockBush
     public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess source, BlockPos pos){
         return new AxisAlignedBB(0.09999999403953552D, 0.0D, 0.09999999403953552D, 0.8999999761581421D, 0.4000000059604645D, 0.8999999761581421D);
     }
-
-
 
     public boolean isOpaqueCube() {
         return false;
@@ -73,6 +70,4 @@ public class BlockDeadPlant extends BlockBush
     public Item getItemDropped(int meta, Random rand, int fortune) {
         return Items.AIR;
     }
-
-
 }

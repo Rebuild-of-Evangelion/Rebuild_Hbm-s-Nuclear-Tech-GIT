@@ -59,5 +59,4 @@ public class BlockAmmoCrate extends Block {
         if(rand.nextInt(10) == 0) ret.add(new ItemStack(ModItems.ammo_standard, 1, EnumAmmo.GRENADE_SLEEK.ordinal()));
         if(rand.nextInt(10) == 0) ret.add(new ItemStack(ModItems.syringe_metal_super, 2));
 	}
-
 }

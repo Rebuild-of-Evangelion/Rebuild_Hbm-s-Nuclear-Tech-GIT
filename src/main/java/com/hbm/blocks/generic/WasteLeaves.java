@@ -11,6 +11,7 @@ import net.minecraft.block.BlockOldLeaf;
 import net.minecraft.block.BlockPlanks;
 import net.minecraft.block.properties.PropertyEnum;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.init.Blocks;
@@ -139,6 +140,11 @@ public class WasteLeaves extends BlockLeaves {
 		this.leavesFancy = !Blocks.LEAVES.isOpaqueCube(blockState);
 		return super.shouldSideBeRendered(blockState, blockAccess, pos, side);
 	}
+
+    @Override
+    public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+        return MapColor.ORANGE_STAINED_HARDENED_CLAY;
+    }
 
     @Override
     public NonNullList<ItemStack> onSheared(ItemStack item, net.minecraft.world.IBlockAccess world, BlockPos pos, int fortune) {

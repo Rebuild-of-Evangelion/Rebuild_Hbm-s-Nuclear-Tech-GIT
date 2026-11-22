@@ -5,10 +5,12 @@ import com.hbm.hazard.HazardSystem;
 
 import net.minecraft.block.BlockIce;
 import net.minecraft.block.SoundType;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 public class WasteIce extends BlockIce {
@@ -32,5 +34,11 @@ public class WasteIce extends BlockIce {
 	public void onEntityCollision(World worldIn, BlockPos pos, IBlockState state, Entity entity){
 		if(entity instanceof EntityLivingBase)
 			HazardSystem.applyHazards(this, (EntityLivingBase)entity);
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.waste_ice) return MapColor.IRON;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

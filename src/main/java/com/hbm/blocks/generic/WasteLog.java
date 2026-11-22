@@ -9,6 +9,7 @@ import com.hbm.main.MainRegistry;
 import net.minecraft.block.BlockLog;
 import net.minecraft.block.BlockRotatedPillar;
 import net.minecraft.block.SoundType;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Items;
@@ -81,5 +82,12 @@ public class WasteLog extends BlockRotatedPillar {
 		if(logAxis == BlockLog.EnumAxis.X) return this.getDefaultState();
 		if(logAxis == BlockLog.EnumAxis.NONE) return this.getDefaultState().withProperty(AXIS, Axis.Y);
 		return null;
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.waste_log) return MapColor.GRAY_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.frozen_log) return MapColor.CLAY;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

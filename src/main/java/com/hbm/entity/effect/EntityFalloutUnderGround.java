@@ -149,7 +149,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				return;
 			} else if(META_TIERED.contains(bblock)) {
 				if(l < radius) {
-					if(bblock == ModBlocks.waste_grass_tall || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
+					if(bblock == ModBlocks.waste_tall_grass || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
 						world.setBlockState(pos, Blocks.AIR.getDefaultState());
 						return;
 					}
@@ -163,7 +163,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 					}
 				}
 				if(l < s1 && !Library.rollChance(l, radius, rand)) {
-					if (bblock == ModBlocks.waste_grass_tall) {
+					if (bblock == ModBlocks.waste_tall_grass) {
 						world.setBlockState(pos, Blocks.AIR.getDefaultState());
 						return;
 					}
@@ -193,12 +193,12 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				}
 				continue;
 
-			} else if(bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM) {
+			} else if(bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM || bblock == ModBlocks.mush) {
 				if(l >= s0) {
 					continue;
 				}
 				if(l > s1 || (l > radius && Library.rollChance(l, radius, rand))) {
-					world.setBlockState(pos, ModBlocks.mush.getDefaultState());
+					if(bblock != ModBlocks.mush) world.setBlockState(pos, ModBlocks.mush.getDefaultState());
 				} else {
 					world.setBlockState(pos, Blocks.AIR.getDefaultState());
 				}
@@ -213,15 +213,15 @@ public class EntityFalloutUnderGround extends EntityChunky {
 					continue;
 				} else if(dblock == Blocks.FARMLAND){
 					placeBlockFromDist(l, ModBlocks.waste_dirt, pos.down());
-					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(l, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock instanceof BlockGrass){
-					placeBlockFromDist(l, ModBlocks.waste_earth, pos.down());
-					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(l, ModBlocks.waste_grass, pos.down());
+					placeBlockFromDist(l, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock instanceof BlockDirt){
 					BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
 					if(meta == BlockDirt.DirtType.PODZOL) placeBlockFromDist(l, WasteDirt.podzolState(tierIndex(l, false, 0, -1)), pos.down());
 					else placeBlockFromDist(l, ModBlocks.waste_dirt, pos.down());
-					placeBlockFromDist(l, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(l, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock == Blocks.MYCELIUM){
 					placeBlockFromDist(l, ModBlocks.waste_mycelium, pos.down());
 					world.setBlockState(pos, ModBlocks.mush.getDefaultState());
@@ -229,7 +229,7 @@ public class EntityFalloutUnderGround extends EntityChunky {
 				continue;
 
 			} else if(bblock instanceof BlockGrass) {
-				placeBlockFromDist(l, ModBlocks.waste_earth, pos);
+				placeBlockFromDist(l, ModBlocks.waste_grass, pos);
 				return;
 			} else if(bblock instanceof BlockDirt) {
 				BlockDirt.DirtType meta = b.getValue(BlockDirt.VARIANT);
@@ -405,12 +405,12 @@ public class EntityFalloutUnderGround extends EntityChunky {
 	};
 
 	private static final Set<Block> META_TIERED = new HashSet<>(Arrays.asList(
-			ModBlocks.fallout, ModBlocks.waste_earth, ModBlocks.waste_dirt,
+			ModBlocks.fallout, ModBlocks.waste_grass, ModBlocks.waste_dirt,
 			ModBlocks.waste_gravel, ModBlocks.waste_snow, ModBlocks.waste_snow_block,
 			ModBlocks.waste_mycelium, ModBlocks.waste_sand, ModBlocks.waste_sand_red,
 			ModBlocks.waste_trinitite, ModBlocks.waste_trinitite_red,
 			ModBlocks.waste_sandstone, ModBlocks.waste_sandstone_red,
-			ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_grass_tall));
+			ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_tall_grass));
 
 		/** Maps a distance to a 0..6 tier index. sellafield=true uses the 0.1 jitter (meta uses 0.2); stoneDepth=0 with maxStoneDepth=-1 disables the depth term. */
 	private int tierIndex(double dist, boolean sellafield, int stoneDepth, int maxStoneDepth){

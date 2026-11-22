@@ -323,12 +323,12 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 	};
 
 	private static final Set<Block> META_TIERED = new HashSet<>(Arrays.asList(
-			ModBlocks.fallout, ModBlocks.waste_earth, ModBlocks.waste_dirt,
+			ModBlocks.fallout, ModBlocks.waste_grass, ModBlocks.waste_dirt,
 			ModBlocks.waste_gravel, ModBlocks.waste_snow, ModBlocks.waste_snow_block,
 			ModBlocks.waste_mycelium, ModBlocks.waste_sand, ModBlocks.waste_sand_red,
 			ModBlocks.waste_trinitite, ModBlocks.waste_trinitite_red,
 			ModBlocks.waste_sandstone, ModBlocks.waste_sandstone_red,
-			ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_grass_tall));
+			ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_tall_grass));
 
 		/** Maps a distance to a 0..6 tier index. sellafield=true uses the 0.1 jitter (meta uses 0.2); stoneDepth=0 with maxStoneDepth=-1 disables the depth term. */
 	private int tierIndex(double dist, boolean sellafield, int stoneDepth, int maxStoneDepth){
@@ -415,11 +415,11 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				continue;
 			}
 
-			if(bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM){
+			if(bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM || bblock == ModBlocks.mush){
 				if(dist >= s0) {
 					continue;
 				} else if(dist > s1 || (dist > fallingRadius && Library.rollChance(dist, fallingRadius, world.rand))) {
-					setBlockAndNotify(pos, ModBlocks.mush.getDefaultState());
+					if(bblock != ModBlocks.mush) setBlockAndNotify(pos, ModBlocks.mush.getDefaultState());
 				} else {
 					setBlockAndTrack(pos, Blocks.AIR.getDefaultState(), 3);
 				}
@@ -428,7 +428,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 
 			if(META_TIERED.contains(bblock)) {
 				if(dist < fallingRadius) {
-					if(bblock == ModBlocks.waste_grass_tall || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
+					if(bblock == ModBlocks.waste_tall_grass || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
 						setBlockAndTrack(pos, Blocks.AIR.getDefaultState(), 3);
 						continue;
 					}
@@ -442,7 +442,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 					}
 				}
 				if(dist < s1 && !Library.rollChance(dist, fallingRadius, rand)) {
-					if (bblock == ModBlocks.waste_grass_tall) {
+					if (bblock == ModBlocks.waste_tall_grass) {
 						setBlockAndTrack(pos, Blocks.AIR.getDefaultState(), 3);
 						continue;
 					}
@@ -470,7 +470,7 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 				continue;
 
 			} else if(bblock instanceof BlockGrass) {
-				placeBlockFromDist(dist, ModBlocks.waste_earth, pos);
+				placeBlockFromDist(dist, ModBlocks.waste_grass, pos);
 				continue;
 
 			} else if(bblock instanceof BlockGravel) {
@@ -513,14 +513,14 @@ public class EntityFalloutRain extends EntityChunky implements IConstantRenderer
 					continue;
 				} else if(dblock == Blocks.FARMLAND){
 					placeBlockFromDist(dist, ModBlocks.waste_dirt, pos.down());
-					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(dist, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock instanceof BlockGrass){
-					placeBlockFromDist(dist, ModBlocks.waste_earth, pos.down());
-					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(dist, ModBlocks.waste_grass, pos.down());
+					placeBlockFromDist(dist, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock instanceof BlockDirt){
 					BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
 					if(meta == BlockDirt.DirtType.PODZOL) placeBlockFromDist(dist, WasteDirt.podzolState(tierIndex(dist, false, 0, -1)), pos.down()); else placeBlockFromDist(dist, ModBlocks.waste_dirt, pos.down());
-					placeBlockFromDist(dist, ModBlocks.waste_grass_tall, pos);
+					placeBlockFromDist(dist, ModBlocks.waste_tall_grass, pos);
 				} else if(dblock == Blocks.MYCELIUM){
 					placeBlockFromDist(dist, ModBlocks.waste_mycelium, pos.down());
 					setBlockAndTrack(pos, ModBlocks.mush.getDefaultState(), 3);

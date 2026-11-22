@@ -87,12 +87,12 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
             ModBlocks.sellafield_2, ModBlocks.sellafield_3, ModBlocks.sellafield_4, ModBlocks.sellafield_core
     };
     private static final Set<Block> META_TIERED = new HashSet<>(Arrays.asList(
-            ModBlocks.fallout, ModBlocks.waste_earth, ModBlocks.waste_dirt,
+            ModBlocks.fallout, ModBlocks.waste_grass, ModBlocks.waste_dirt,
             ModBlocks.waste_gravel, ModBlocks.waste_snow, ModBlocks.waste_snow_block,
             ModBlocks.waste_mycelium, ModBlocks.waste_sand, ModBlocks.waste_sand_red,
             ModBlocks.waste_trinitite, ModBlocks.waste_trinitite_red,
             ModBlocks.waste_sandstone, ModBlocks.waste_sandstone_red,
-            ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_grass_tall));
+            ModBlocks.waste_clay, ModBlocks.waste_terracotta, ModBlocks.waste_tall_grass));
     private static final long OFF_POOL_ACQUIRED = UnsafeHolder.fieldOffset(EntityFalloutRainParallelized.class, "poolAcquired");
     private static final long OFF_JOB_REGISTERED = UnsafeHolder.fieldOffset(EntityFalloutRainParallelized.class, "jobRegistered");
     private static final long OFF_MAP_ACQUIRED = UnsafeHolder.fieldOffset(EntityFalloutRainParallelized.class, "mapAcquired");
@@ -697,13 +697,15 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
             return;
         }
 
-        if (bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM) {
+        if (bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM || bblock == ModBlocks.mush) {
             if (dist >= s0) {
                 return;
             }
             if (dist > s1 || (dist > fallingRadius && Library.rollChance(dist, fallingRadius, rnd))) {
-                recordSourceAt(ChunkPos.asLong(x >> 4, z >> 4), Library.blockPosToLong(x, y, z), ebs);
-                out.put(Library.blockPosToLong(x, y, z), ModBlocks.mush.getDefaultState());
+                if (bblock != ModBlocks.mush) {
+                    recordSourceAt(ChunkPos.asLong(x >> 4, z >> 4), Library.blockPosToLong(x, y, z), ebs);
+                    out.put(Library.blockPosToLong(x, y, z), ModBlocks.mush.getDefaultState());
+                }
             } else {
                 setAir(x, y, z, out, ebs);
             }
@@ -712,7 +714,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
 
         if (META_TIERED.contains(bblock)) {
             if (dist < fallingRadius) {
-                if (bblock == ModBlocks.waste_grass_tall || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
+                if (bblock == ModBlocks.waste_tall_grass || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
                     setAir(x, y, z, out, ebs);
                     return;
                 }
@@ -726,7 +728,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                 }
             }
             if (dist < s1 && !Library.rollChance(dist, fallingRadius, rnd)) {
-                if (bblock == ModBlocks.waste_grass_tall) {
+                if (bblock == ModBlocks.waste_tall_grass) {
                     setAir(x, y, z, out, ebs);
                     return;
                 }
@@ -756,7 +758,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
         }
 
         if (bblock instanceof BlockGrass) {
-            placeBlockFromDist(dist, ModBlocks.waste_earth, x, y, z, out, rnd, ebs);
+            placeBlockFromDist(dist, ModBlocks.waste_grass, x, y, z, out, rnd, ebs);
             return;
         }
         if (bblock instanceof BlockGravel) {
@@ -805,17 +807,17 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                 return;
             } else if (dblock == Blocks.FARMLAND) {
                 placeBlockFromDist(dist, ModBlocks.waste_dirt, x, y - 1, z, out, rnd, ebs);
-                placeBlockFromDist(dist, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                placeBlockFromDist(dist, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                 markNotify(x, y, z);
             } else if (dblock instanceof BlockGrass) {
-                placeBlockFromDist(dist, ModBlocks.waste_earth, x, y - 1, z, out, rnd, ebs);
-                placeBlockFromDist(dist, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                placeBlockFromDist(dist, ModBlocks.waste_grass, x, y - 1, z, out, rnd, ebs);
+                placeBlockFromDist(dist, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                 markNotify(x, y, z);
             } else if (dblock instanceof BlockDirt) {
                 BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
                 if (meta == BlockDirt.DirtType.PODZOL) placeBlockFromDist(dist, WasteDirt.podzolState(tierIndex(dist, rnd, false, false, 0, -1)), x, y - 1, z, out, rnd, ebs);
                 else placeBlockFromDist(dist, ModBlocks.waste_dirt, x, y - 1, z, out, rnd, ebs);
-                placeBlockFromDist(dist, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                placeBlockFromDist(dist, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                 markNotify(x, y, z);
             } else if (dblock == Blocks.MYCELIUM) {
                 placeBlockFromDist(dist, ModBlocks.waste_mycelium, x, y - 1, z, out, rnd, ebs);
@@ -1100,7 +1102,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                     return;
                 }
                 if (META_TIERED.contains(bblock)) {
-                    if (bblock == ModBlocks.waste_grass_tall || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
+                    if (bblock == ModBlocks.waste_tall_grass || bblock == ModBlocks.waste_snow || bblock == ModBlocks.waste_snow_block) {
                         setAir(x, y, z, out, ebs);
                         return;
                     }
@@ -1112,7 +1114,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                         placeBlockFromDistRadial(l, bblock == ModBlocks.waste_sand ? ModBlocks.waste_trinitite : ModBlocks.waste_trinitite_red, x, y, z, out, rnd, ebs);
                         return;
                     }
-                    if (bblock == ModBlocks.waste_grass_tall && l < rS1 && !Library.rollChance(l, radialRadius, rnd)) {
+                    if (bblock == ModBlocks.waste_tall_grass && l < rS1 && !Library.rollChance(l, radialRadius, rnd)) {
                         setAir(x, y, z, out, ebs);
                         return;
                     }
@@ -1151,11 +1153,13 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                     markNotify(x, y, z);
                     continue;
                 }
-                if (bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM) {
+                if (bblock == Blocks.BROWN_MUSHROOM || bblock == Blocks.RED_MUSHROOM || bblock == ModBlocks.mush) {
                     if (l >= rS0) continue;
                     if (l > rS1) {
-                        recordSourceAt(cp, Library.blockPosToLong(x, y, z), ebs);
-                        out.put(Library.blockPosToLong(x, y, z), ModBlocks.mush.getDefaultState());
+                        if (bblock != ModBlocks.mush) {
+                            recordSourceAt(cp, Library.blockPosToLong(x, y, z), ebs);
+                            out.put(Library.blockPosToLong(x, y, z), ModBlocks.mush.getDefaultState());
+                        }
                     } else {
                         setAir(x, y, z, out, ebs);
                     }
@@ -1173,14 +1177,14 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                     }
                     if (dblock == Blocks.FARMLAND) {
                         placeBlockFromDistRadial(l, ModBlocks.waste_dirt, x, y - 1, z, out, rnd, ebs);
-                        placeBlockFromDistRadial(l, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                        placeBlockFromDistRadial(l, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                     } else if (dblock instanceof BlockGrass) {
-                        placeBlockFromDistRadial(l, ModBlocks.waste_earth, x, y - 1, z, out, rnd, ebs);
-                        placeBlockFromDistRadial(l, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                        placeBlockFromDistRadial(l, ModBlocks.waste_grass, x, y - 1, z, out, rnd, ebs);
+                        placeBlockFromDistRadial(l, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                     } else if (dblock instanceof BlockDirt) {
                         BlockDirt.DirtType meta = d.getValue(BlockDirt.VARIANT);
                         if (meta == BlockDirt.DirtType.PODZOL) placeBlockFromDistRadial(l, WasteDirt.podzolState(tierIndex(l, rnd, true, false, 0, -1)), x, y - 1, z, out, rnd, ebs); else placeBlockFromDistRadial(l, ModBlocks.waste_dirt, x, y - 1, z, out, rnd, ebs);
-                        placeBlockFromDistRadial(l, ModBlocks.waste_grass_tall, x, y, z, out, rnd, ebs);
+                        placeBlockFromDistRadial(l, ModBlocks.waste_tall_grass, x, y, z, out, rnd, ebs);
                     } else if (dblock == Blocks.MYCELIUM) {
                         placeBlockFromDistRadial(l, ModBlocks.waste_mycelium, x, y - 1, z, out, rnd, ebs);
                         recordSourceAt(cp, Library.blockPosToLong(x, y, z), ebs);
@@ -1206,7 +1210,7 @@ public class EntityFalloutRainParallelized extends EntityChunky implements BombF
                     continue;
                 }
                 if (bblock instanceof BlockGrass) {
-                    placeBlockFromDistRadial(l, ModBlocks.waste_earth, x, y, z, out, rnd, ebs);
+                    placeBlockFromDistRadial(l, ModBlocks.waste_grass, x, y, z, out, rnd, ebs);
                     return;
                 }
                 if (bblock instanceof BlockDirt) {

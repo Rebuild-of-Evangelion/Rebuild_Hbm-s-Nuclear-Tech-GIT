@@ -95,11 +95,6 @@ public class BlockHazardFalling extends BlockFalling {
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
 		if(this == ModBlocks.block_fallout) return MapColor.GRAY;
-		if(this == ModBlocks.ash_digamma) return MapColor.SILVER;
-		if(this == ModBlocks.block_yellowcake) return MapColor.YELLOW_STAINED_HARDENED_CLAY;
-		if(this == ModBlocks.sand_uranium) return MapColor.IRON;
-		if(this == ModBlocks.sand_polonium) return MapColor.SILVER_STAINED_HARDENED_CLAY;
-		if(this == ModBlocks.sand_gold198) return MapColor.YELLOW;
 		return super.getMapColor(state, worldIn, pos);
 	}
 }

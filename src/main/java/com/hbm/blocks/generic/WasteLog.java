@@ -87,7 +87,6 @@ public class WasteLog extends BlockRotatedPillar {
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
 		if(this == ModBlocks.waste_log) return MapColor.GRAY_STAINED_HARDENED_CLAY;
-		if(this == ModBlocks.frozen_log) return MapColor.CLAY;
 		return super.getMapColor(state, worldIn, pos);
 	}
 }

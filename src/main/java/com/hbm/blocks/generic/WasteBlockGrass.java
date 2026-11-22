@@ -25,6 +25,7 @@ import net.minecraft.init.MobEffects;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -69,15 +70,14 @@ public class WasteBlockGrass extends Block {
 	
 	@Override
 	@SideOnly(Side.CLIENT)
-	public net.minecraft.util.BlockRenderLayer getRenderLayer() {
-		return this == ModBlocks.waste_grass || this == ModBlocks.waste_mycelium ? net.minecraft.util.BlockRenderLayer.CUTOUT_MIPPED : net.minecraft.util.BlockRenderLayer.SOLID;
+	public BlockRenderLayer getRenderLayer() {
+		return this == ModBlocks.waste_grass || this == ModBlocks.waste_mycelium ? BlockRenderLayer.CUTOUT_MIPPED : BlockRenderLayer.SOLID;
 	}
 	
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
 		if(this == ModBlocks.waste_mycelium) return MapColor.GREEN;
 		if(this == ModBlocks.waste_grass) return MapColor.BROWN;
-		if(this == ModBlocks.frozen_grass) return MapColor.CLAY;
 		return super.getMapColor(state, worldIn, pos);
 	}
 

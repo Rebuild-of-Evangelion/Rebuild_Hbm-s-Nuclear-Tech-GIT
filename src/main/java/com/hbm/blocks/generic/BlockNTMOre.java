@@ -25,6 +25,7 @@ import net.minecraft.world.IBlockAccess;
 public class BlockNTMOre extends BlockOre {
 	
 	public static int xp;
+	public static int ammoMeta;
 
 	public BlockNTMOre(String name, int harvestLvl, int xp) {
 		super();
@@ -48,8 +49,9 @@ public class BlockNTMOre extends BlockOre {
 
 	@Override
 	public int getExpDrop(IBlockState state, IBlockAccess world, BlockPos pos, int fortune){
-		if(this.getItemDropped(state, RANDOM, fortune) != Item.getItemFromBlock(this))
-			return xp;
+		boolean flag = this.getItemDropped(state, RANDOM, fortune) != Item.getItemFromBlock(this);
+		ammoMeta = 0;
+		if(flag) return xp;
 		return 0;
 	}
 	
@@ -122,8 +124,8 @@ public class BlockNTMOre extends BlockOre {
 			case 28: return ModItems.pellet_rtg_weak;
 			case 29: return ModItems.rtg_unit;
 			case 30: return ModItems.gun_spark_ammo;
-			case 31: return ModItems.ammo_standard;
-			case 32: return ModItems.ammo_standard;
+			case 31: ammoMeta = EnumAmmo.NUKE_STANDARD.ordinal(); return ModItems.ammo_standard;
+			case 32: ammoMeta = EnumAmmo.MIRV_STANDARD.ordinal(); return ModItems.ammo_standard;
 			case 33: return ModItems.gun_defabricator_ammo;
 			case 34: return ModItems.gun_osipr_ammo2;
 			}
@@ -202,8 +204,11 @@ public class BlockNTMOre extends BlockOre {
 	
 	@Override
 	public int damageDropped(IBlockState state) {
-		if(this == ModBlocks.block_meteor_treasure)
-			return RANDOM.nextBoolean() ? EnumAmmo.NUKE_STANDARD.ordinal() : EnumAmmo.MIRV_STANDARD.ordinal();
+		if(this == ModBlocks.block_meteor_treasure) {
+			int meta = ammoMeta;
+			ammoMeta = 0;
+			return meta;
+		}
 		return 0;
 	}
 	

@@ -239,11 +239,4 @@ public class BlockHazard extends BlockBase {
 		}
 		return Item.getItemFromBlock(this);
 	}
-
-	@Override
-	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(this == ModBlocks.frozen_planks) return MapColor.CLAY;
-		if(this == ModBlocks.frozen_dirt) return MapColor.CLAY;
-		return super.getMapColor(state, worldIn, pos);
-	}
 }

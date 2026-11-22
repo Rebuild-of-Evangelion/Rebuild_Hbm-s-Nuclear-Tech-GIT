@@ -71,7 +71,8 @@ public class WasteTallGrass extends BlockBush {
 	@Override
     public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos)
     {
-    	return MapColor.FOLIAGE;
+    	if(this == ModBlocks.waste_tall_grass) return MapColor.WOOD;
+    	return super.getMapColor(state, worldIn, pos);
     }
 
     @Override

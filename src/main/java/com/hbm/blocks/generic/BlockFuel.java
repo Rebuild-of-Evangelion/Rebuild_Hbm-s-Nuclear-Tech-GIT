@@ -2,7 +2,10 @@ package com.hbm.blocks.generic;
 
 import com.hbm.blocks.BlockBase;
 
+import com.hbm.blocks.ModBlocks;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -43,5 +46,11 @@ public class BlockFuel extends BlockBase {
 	@Override
 	public boolean isFireSource(World world, BlockPos pos, EnumFacing side){
 		return true;
+	}
+
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.waste_planks) return MapColor.GRAY_STAINED_HARDENED_CLAY;
+		return super.getMapColor(state, worldIn, pos);
 	}
 }

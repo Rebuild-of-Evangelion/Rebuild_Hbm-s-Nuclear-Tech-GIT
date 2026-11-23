@@ -21,6 +21,7 @@ import net.minecraft.block.*;
 import org.apache.logging.log4j.Logger;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.blocks.generic.BlockCrate;
 import com.hbm.blocks.network.energy.CableDiode.TileEntityDiode;
 import com.hbm.blocks.network.energy.BlockCableGauge.TileEntityCableGauge;
@@ -500,6 +501,7 @@ public class MainRegistry {
 		CapabilityManager.INSTANCE.register(HbmCapability.IHBMData.class, new HbmCapability.HBMDataStorage(), HbmCapability.HBMData.FACTORY);
 		ModForgeFluids.init();
 		ModItems.preInit();
+		HbmCorePlugin.registerMapColors();
 		ModBlocks.preInit();
 		OreDictManager.registerOres();
 		BulletConfigSyncingUtil.loadConfigsForSync();

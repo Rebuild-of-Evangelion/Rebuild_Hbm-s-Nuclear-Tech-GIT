@@ -1,7 +1,9 @@
 package com.hbm.core;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,6 +26,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 import com.hbm.entity.effect.EntityNukeTorex;
 
+import net.minecraft.block.material.MapColor;
 import net.minecraft.entity.Entity;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.util.math.Vec3d;
@@ -326,6 +329,12 @@ public class HbmCorePlugin implements IFMLLoadingPlugin, IClassTransformer {
 			return transformWorld(basicClass);
 		if (transformedName.equals("net.minecraft.client.renderer.EntityRenderer"))
 			return transformEntityRenderer(basicClass);
+		if (transformedName.equals("net.minecraft.item.ItemMap"))
+			return transformItemMap(basicClass);
+		if (transformedName.startsWith("net.minecraft.client.gui.MapItemRenderer"))
+			return transformMapItemRenderer(basicClass);
+		if (transformedName.equals("net.minecraft.block.material.MapColor"))
+			return transformMapColor(basicClass);
 		if (!transformedName.equals("net.minecraft.entity.passive.EntitySheep"))
 			return basicClass;
 		try {
@@ -420,6 +429,352 @@ public class HbmCorePlugin implements IFMLLoadingPlugin, IClassTransformer {
 
 	private static float flashWeight() {
 		return EntityNukeTorex.getFlashWeight();
+	}
+
+	/** Custom map colors: slot -> 0xRRGGBB, addressable through the unused byte range 208..255 (16 colors x 3 shades). */
+	private static final int[] HBM_COLORS = new int[16];
+	private static final IdentityHashMap<MapColor, Integer> HBM_SLOTS = new IdentityHashMap<>();
+	private static int hbmNextSlot = 0;
+	private static Constructor<MapColor> hbmCtor;
+
+	/** MapColor constants handed to the fallout/radiation blocks; filled by registerMapColors(). */
+	public static MapColor SELLAFIELD_SLAKED, SELLAFIELD_1, SELLAFIELD_2, SELLAFIELD_CORE, WASTE_GRASS, WASTE_MYCELIUM,
+			WASTE_PODZOL, WASTE_WOOD, WASTE_TRINITITE, WASTE_TRINITITE_RED, WASTE_TALL_GRASS, WASTE_LEAVES, MUSH,
+			MUSH_BLOCK, MUSH_BLOCK_RED, TOXIC_BLOCK;
+
+	/** Fills the custom map color constants; called once from preInit on both sides. */
+	public static void registerMapColors() {
+		if(hbmNextSlot != 0)
+			return;
+
+		SELLAFIELD_SLAKED = mapColor(0x6F6F6F);
+		SELLAFIELD_1 = mapColor(0x5F5F5F);
+		SELLAFIELD_2 = mapColor(0x4C4C4C);
+		SELLAFIELD_CORE = mapColor(0x2E2E2E);
+		WASTE_GRASS = mapColor(0x403B2F);
+		WASTE_MYCELIUM = mapColor(0x92E907);
+		WASTE_PODZOL = mapColor(0x363328);
+		WASTE_WOOD = mapColor(0x2D2D2D);
+		WASTE_TRINITITE = mapColor(0xAFAE7E);
+		WASTE_TRINITITE_RED = mapColor(0x8A5321);
+		WASTE_TALL_GRASS = mapColor(0x877952);
+		WASTE_LEAVES = mapColor(0x744A2F);
+		MUSH = mapColor(0x9BF219);
+		MUSH_BLOCK = mapColor(0x528D00);
+		MUSH_BLOCK_RED = mapColor(0x6AB600);
+		TOXIC_BLOCK = mapColor(0x202020);
+	}
+
+	/** Registers one custom map color; the returned instance is what Block#getMapColor should return. */
+	public static MapColor mapColor(int rgb) {
+		int slot = hbmNextSlot++;
+		if(slot >= HBM_COLORS.length)
+			throw new IllegalStateException("HBM map color slots exhausted");
+
+		HBM_COLORS[slot] = rgb & 0xFFFFFF;
+
+		MapColor color = newMapColor(52 + slot % 12, rgb & 0xFFFFFF);
+		HBM_SLOTS.put(color, Integer.valueOf(slot));
+		return color;
+	}
+
+	private static MapColor newMapColor(int index, int rgb) {
+		try {
+			if(hbmCtor == null) {
+				for(Constructor<?> c : MapColor.class.getDeclaredConstructors()) {
+					Class<?>[] p = c.getParameterTypes();
+					if(p.length == 3 && p[0] == int.class && p[1] == int.class && p[2] == boolean.class) {
+						hbmCtor = (Constructor<MapColor>) c;
+						break;
+					}
+				}
+
+				if(hbmCtor == null) {
+					for(Constructor<?> c : MapColor.class.getDeclaredConstructors()) {
+						Class<?>[] p = c.getParameterTypes();
+						if(p.length == 2 && p[0] == int.class && p[1] == int.class) {
+							hbmCtor = (Constructor<MapColor>) c;
+							System.err.println("[HBM] MapColor ctor patch missing, custom map colors will occupy COLORS[52..63]");
+							break;
+						}
+					}
+				}
+			}
+
+			hbmCtor.setAccessible(true);
+
+			if(hbmCtor.getParameterCount() == 3)
+				return hbmCtor.newInstance(index, rgb, Boolean.FALSE);
+
+			return hbmCtor.newInstance(index, rgb);
+		} catch(Throwable t) {
+			t.printStackTrace();
+			return null;
+		}
+	}
+
+	/** Write side: our instances map to 208 + slot*3 + shade, everything else keeps the vanilla formula. */
+	public static byte enc(MapColor color, int shade) {
+		if(color == null)
+			return 0;
+
+		Integer slot = HBM_SLOTS.get(color);
+
+		if(slot != null) {
+			int level = shade == 0 ? 0 : shade == 2 ? 2 : shade == 3 ? 0 : 1;
+			return (byte)(208 + slot.intValue() * 3 + level);
+		}
+
+		return (byte)(color.colorIndex * 4 + shade);
+	}
+
+	/** Read side: byte values 208..255 carry a custom RGB plus one of the three vanilla shades. */
+	public static int dec(int j) {
+		if(j >= 208) {
+			int idx = j - 208;
+			int slot = idx / 3;
+			int level = idx % 3;
+			int factor = level == 0 ? 180 : level == 1 ? 220 : 255;
+			int rgb = HBM_COLORS[slot];
+			int r = ((rgb >> 16) & 255) * factor / 255;
+			int g = ((rgb >> 8) & 255) * factor / 255;
+			int b = (rgb & 255) * factor / 255;
+			return 0xFF000000 | (r << 16) | (g << 8) | b;
+		}
+		return 0;
+	}
+
+	/** Next actual instruction, skipping labels and line numbers. */
+	private static AbstractInsnNode next(AbstractInsnNode insn) {
+		AbstractInsnNode node = insn == null ? null : insn.getNext();
+
+		while(node != null && node.getOpcode() < 0)
+			node = node.getNext();
+
+		return node;
+	}
+
+	/** Adds a MapColor ctor that sets the fields without touching COLORS, so custom colors occupy no palette slot. */
+	private byte[] transformMapColor(byte[] basicClass) {
+		try {
+			ClassNode classNode = new ClassNode();
+			new ClassReader(basicClass).accept(classNode, 0);
+
+			FieldInsnNode colorIndex = null;
+			FieldInsnNode colorValue = null;
+
+			for(MethodNode method : classNode.methods) {
+				if(!method.name.equals("<init>") || !method.desc.equals("(II)V"))
+					continue;
+
+				for(AbstractInsnNode insn : method.instructions.toArray()) {
+					if(insn instanceof FieldInsnNode && insn.getOpcode() == Opcodes.PUTFIELD && ((FieldInsnNode) insn).desc.equals("I")) {
+						if(colorIndex == null)
+							colorIndex = (FieldInsnNode) insn;
+						else if(colorValue == null)
+							colorValue = (FieldInsnNode) insn;
+					}
+				}
+			}
+
+			if(colorIndex == null || colorValue == null)
+				return basicClass;
+
+			MethodNode ctor = new MethodNode(Opcodes.ACC_PUBLIC, "<init>", "(IIZ)V", null, null);
+			InsnList body = ctor.instructions;
+
+			body.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			body.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false));
+			body.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			body.add(new VarInsnNode(Opcodes.ILOAD, 1));
+			body.add(new FieldInsnNode(Opcodes.PUTFIELD, colorIndex.owner, colorIndex.name, colorIndex.desc));
+			body.add(new VarInsnNode(Opcodes.ALOAD, 0));
+			body.add(new VarInsnNode(Opcodes.ILOAD, 2));
+			body.add(new FieldInsnNode(Opcodes.PUTFIELD, colorValue.owner, colorValue.name, colorValue.desc));
+			body.add(new InsnNode(Opcodes.RETURN));
+
+			classNode.methods.add(ctor);
+
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+			classNode.accept(writer);
+			return writer.toByteArray();
+		} catch(Throwable t) {
+			t.printStackTrace();
+			return basicClass;
+		}
+	}
+
+	/** Rewrites every "colorIndex * 4 + shade" map color write in ItemMap to go through enc(). */
+	private byte[] transformItemMap(byte[] basicClass) {
+		try {
+			ClassNode classNode = new ClassNode();
+			new ClassReader(basicClass).accept(classNode, 0);
+
+			boolean patched = false;
+
+			for(MethodNode method : classNode.methods) {
+				List<Object[]> sites = new ArrayList<>();
+				java.util.Set<String> staticDescs = new java.util.HashSet<>();
+
+				for(AbstractInsnNode insn : method.instructions.toArray()) {
+					if(insn instanceof FieldInsnNode && insn.getOpcode() == Opcodes.GETSTATIC)
+						staticDescs.add(((FieldInsnNode) insn).desc);
+				}
+
+				for(AbstractInsnNode insn : method.instructions.toArray()) {
+					if(!(insn instanceof FieldInsnNode))
+						continue;
+
+					FieldInsnNode f = (FieldInsnNode) insn;
+
+					if(f.getOpcode() != Opcodes.GETFIELD || !f.desc.equals("I"))
+						continue;
+
+					// owner is not hardcoded: the same class must also be referenced by a GETSTATIC of type L<owner>;
+					if(!staticDescs.contains("L" + f.owner + ";"))
+						continue;
+
+					AbstractInsnNode mul = next(f);
+					AbstractInsnNode imul = next(mul);
+					AbstractInsnNode shade = next(imul);
+					AbstractInsnNode add = next(shade);
+					AbstractInsnNode toByte = next(add);
+
+					if(mul == null || mul.getOpcode() != Opcodes.ICONST_4)
+						continue;
+					if(imul == null || imul.getOpcode() != Opcodes.IMUL)
+						continue;
+					if(shade == null || shade.getOpcode() != Opcodes.ILOAD)
+						continue;
+					if(add == null || add.getOpcode() != Opcodes.IADD)
+						continue;
+					if(toByte == null || toByte.getOpcode() != Opcodes.I2B)
+						continue;
+
+					AbstractInsnNode color = prev(f);
+					if(!(color instanceof VarInsnNode) || color.getOpcode() != Opcodes.ALOAD)
+						continue;
+
+					sites.add(new Object[] {color, toByte, color, shade, f.owner});
+				}
+
+				for(Object[] site : sites) {
+					String mapColorType = (String) site[4];
+					AbstractInsnNode from = (AbstractInsnNode) site[0];
+					AbstractInsnNode to = (AbstractInsnNode) site[1];
+
+					InsnList repl = new InsnList();
+					repl.add(new VarInsnNode(Opcodes.ALOAD, ((VarInsnNode) site[2]).var));
+					repl.add(new VarInsnNode(Opcodes.ILOAD, ((VarInsnNode) site[3]).var));
+					repl.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Type.getInternalName(HbmCorePlugin.class), "enc",
+							"(L" + mapColorType + ";I)B", false));
+
+					method.instructions.insertBefore(from, repl);
+
+					AbstractInsnNode node = from;
+					while(node != null) {
+						AbstractInsnNode n = node.getNext();
+						boolean last = node == to;
+						method.instructions.remove(node);
+						if(last)
+							break;
+						node = n;
+					}
+
+					patched = true;
+				}
+			}
+
+			if(!patched)
+				return basicClass;
+
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+			classNode.accept(writer);
+			return writer.toByteArray();
+		} catch(Throwable t) {
+			t.printStackTrace();
+			return basicClass;
+		}
+	}
+
+	/** Makes MapItemRenderer consult dec() before the vanilla palette lookup. */
+	private byte[] transformMapItemRenderer(byte[] basicClass) {
+		try {
+			ClassNode classNode = new ClassNode();
+			new ClassReader(basicClass).accept(classNode, 0);
+
+			boolean patched = false;
+
+			for(MethodNode method : classNode.methods) {
+				MethodInsnNode call = null;
+				FieldInsnNode colors = null;
+
+				// No hardcoded class name: the palette array's element type is the owner of getMapColor(int)
+				for(AbstractInsnNode insn : method.instructions.toArray()) {
+					if(!(insn instanceof FieldInsnNode))
+						continue;
+
+					FieldInsnNode f = (FieldInsnNode) insn;
+
+					if(f.getOpcode() != Opcodes.GETSTATIC || !f.desc.startsWith("[L") || !f.desc.endsWith(";"))
+						continue;
+
+					String owner = f.desc.substring(2, f.desc.length() - 1);
+
+					for(AbstractInsnNode n = f.getNext(); n != null; n = n.getNext()) {
+						if(n instanceof MethodInsnNode) {
+							MethodInsnNode m = (MethodInsnNode) n;
+							if(m.getOpcode() == Opcodes.INVOKEVIRTUAL && m.owner.equals(owner) && m.desc.equals("(I)I")) {
+								colors = f;
+								call = m;
+								break;
+							}
+						}
+					}
+
+					if(call != null)
+						break;
+				}
+
+				if(call == null)
+					continue;
+
+				int indexVar = -1;
+
+				for(AbstractInsnNode n = colors.getNext(); n != null && n != call; n = n.getNext()) {
+					if(n.getOpcode() == Opcodes.ILOAD) {
+						indexVar = ((VarInsnNode) n).var;
+						break;
+					}
+				}
+
+				if(indexVar < 0)
+					continue;
+
+				LabelNode done = new LabelNode();
+				InsnList pre = new InsnList();
+				pre.add(new VarInsnNode(Opcodes.ILOAD, indexVar));
+				pre.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Type.getInternalName(HbmCorePlugin.class), "dec", "(I)I", false));
+				pre.add(new InsnNode(Opcodes.DUP));
+				pre.add(new JumpInsnNode(Opcodes.IFNE, done));
+				pre.add(new InsnNode(Opcodes.POP));
+
+				method.instructions.insertBefore(colors, pre);
+				method.instructions.insert(call, done);
+
+				patched = true;
+			}
+
+			if(!patched)
+				return basicClass;
+
+			ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+			classNode.accept(writer);
+			return writer.toByteArray();
+		} catch(Throwable t) {
+			t.printStackTrace();
+			return basicClass;
+		}
 	}
 
 	/** Instruction array without labels and line numbers. */

@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.config.GeneralConfig;
 import com.hbm.main.MainRegistry;
 import com.hbm.world.HugeMush;
@@ -102,7 +103,7 @@ public class BlockMush extends BlockBush implements IGrowable {
 
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(this == ModBlocks.mush) return MapColor.LIME;
+		if(this == ModBlocks.mush) return HbmCorePlugin.MUSH;
 		return super.getMapColor(state, worldIn, pos);
 	}
 }

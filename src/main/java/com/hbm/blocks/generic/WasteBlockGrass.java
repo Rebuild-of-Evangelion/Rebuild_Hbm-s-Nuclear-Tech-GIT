@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.config.GeneralConfig;
 import com.hbm.main.MainRegistry;
 import com.hbm.potion.HbmPotion;
@@ -76,8 +77,8 @@ public class WasteBlockGrass extends Block {
 	
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(this == ModBlocks.waste_mycelium) return MapColor.GREEN;
-		if(this == ModBlocks.waste_grass) return MapColor.BROWN;
+		if(this == ModBlocks.waste_mycelium) return HbmCorePlugin.WASTE_MYCELIUM;
+		if(this == ModBlocks.waste_grass) return HbmCorePlugin.WASTE_GRASS;
 		return super.getMapColor(state, worldIn, pos);
 	}
 

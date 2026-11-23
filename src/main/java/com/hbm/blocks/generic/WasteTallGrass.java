@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.main.MainRegistry;
 
 import net.minecraft.item.Item;
@@ -71,7 +72,7 @@ public class WasteTallGrass extends BlockBush {
 	@Override
     public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos)
     {
-    	if(this == ModBlocks.waste_tall_grass) return MapColor.WOOD;
+    	if(this == ModBlocks.waste_tall_grass) return HbmCorePlugin.WASTE_TALL_GRASS;
     	return super.getMapColor(state, worldIn, pos);
     }
 

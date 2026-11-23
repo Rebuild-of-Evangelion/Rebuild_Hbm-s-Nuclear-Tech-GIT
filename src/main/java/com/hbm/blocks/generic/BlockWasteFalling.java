@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.main.MainRegistry;
 import com.hbm.potion.HbmPotion;
 import com.hbm.items.ModItems;
@@ -52,8 +53,10 @@ public class BlockWasteFalling extends BlockFalling {
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
 		if(this == ModBlocks.waste_gravel) return MapColor.STONE;
-		if(this == ModBlocks.waste_sand || this == ModBlocks.waste_trinitite) return MapColor.SAND;
-		if(this == ModBlocks.waste_sand_red || this == ModBlocks.waste_trinitite_red) return MapColor.ADOBE;
+		if(this == ModBlocks.waste_trinitite) return HbmCorePlugin.WASTE_TRINITITE;
+		if(this == ModBlocks.waste_trinitite_red) return HbmCorePlugin.WASTE_TRINITITE_RED;
+		if(this == ModBlocks.waste_sand) return MapColor.SAND;
+		if(this == ModBlocks.waste_sand_red) return MapColor.ADOBE;
 		return super.getMapColor(state, worldIn, pos);
 	}
 

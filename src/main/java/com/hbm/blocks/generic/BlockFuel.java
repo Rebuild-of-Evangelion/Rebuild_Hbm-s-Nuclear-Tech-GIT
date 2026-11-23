@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import com.hbm.blocks.BlockBase;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
@@ -50,7 +51,7 @@ public class BlockFuel extends BlockBase {
 
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(this == ModBlocks.waste_planks) return MapColor.GRAY_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.waste_planks) return HbmCorePlugin.WASTE_WOOD;
 		return super.getMapColor(state, worldIn, pos);
 	}
 }

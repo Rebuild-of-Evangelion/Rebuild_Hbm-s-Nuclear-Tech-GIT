@@ -1,6 +1,7 @@
 package com.hbm.blocks.generic;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 
 import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
@@ -31,13 +32,13 @@ public class BlockHazardMeta extends BlockHazard {
 		if(this == ModBlocks.waste_sandstone) return MapColor.SAND;
 		if(this == ModBlocks.waste_sandstone_red) return MapColor.ADOBE;
 		if(this == ModBlocks.waste_terracotta) return MapColor.ADOBE;
-		if(this == ModBlocks.sellafield_slaked) return MapColor.STONE;
-		if(this == ModBlocks.sellafield_0) return MapColor.STONE;
-		if(this == ModBlocks.sellafield_1) return MapColor.STONE;
-		if(this == ModBlocks.sellafield_2) return MapColor.GRAY;
-		if(this == ModBlocks.sellafield_3) return MapColor.GRAY;
-		if(this == ModBlocks.sellafield_4) return MapColor.GRAY_STAINED_HARDENED_CLAY;
-		if(this == ModBlocks.sellafield_core) return MapColor.GRAY_STAINED_HARDENED_CLAY;
+		if(this == ModBlocks.sellafield_slaked) return HbmCorePlugin.SELLAFIELD_SLAKED;
+		if(this == ModBlocks.sellafield_0) return HbmCorePlugin.SELLAFIELD_SLAKED;
+		if(this == ModBlocks.sellafield_1) return HbmCorePlugin.SELLAFIELD_1;
+		if(this == ModBlocks.sellafield_2) return HbmCorePlugin.SELLAFIELD_2;
+		if(this == ModBlocks.sellafield_3) return HbmCorePlugin.SELLAFIELD_2;
+		if(this == ModBlocks.sellafield_4) return HbmCorePlugin.SELLAFIELD_CORE;
+		if(this == ModBlocks.sellafield_core) return HbmCorePlugin.SELLAFIELD_CORE;
 		return super.getMapColor(state, worldIn, pos);
 	}
 

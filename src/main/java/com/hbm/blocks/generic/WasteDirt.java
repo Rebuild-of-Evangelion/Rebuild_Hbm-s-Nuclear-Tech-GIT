@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Locale;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 
 import net.minecraft.block.SoundType;
 import net.minecraft.block.material.MapColor;
@@ -104,7 +105,7 @@ public class WasteDirt extends WasteBlockGrass {
 
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(state.getValue(VARIANT) == Variant.PODZOL) return MapColor.BROWN_STAINED_HARDENED_CLAY;
+		if(state.getValue(VARIANT) == Variant.PODZOL) return HbmCorePlugin.WASTE_PODZOL;
 		if(this == ModBlocks.waste_dirt) return MapColor.DIRT;
 		return super.getMapColor(state, worldIn, pos);
 	}

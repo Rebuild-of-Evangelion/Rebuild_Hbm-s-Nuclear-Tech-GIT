@@ -3,6 +3,7 @@ package com.hbm.blocks.generic;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.items.ModItems;
 
 import net.minecraft.block.BlockLeaves;
@@ -143,7 +144,7 @@ public class WasteLeaves extends BlockLeaves {
 
     @Override
     public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-        return MapColor.ORANGE_STAINED_HARDENED_CLAY;
+        return HbmCorePlugin.WASTE_LEAVES;
     }
 
     @Override

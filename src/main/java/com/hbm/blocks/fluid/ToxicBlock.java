@@ -3,12 +3,14 @@ package com.hbm.blocks.fluid;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.core.HbmCorePlugin;
 import com.hbm.util.ContaminationUtil;
 import com.hbm.util.ContaminationUtil.ContaminationType;
 import com.hbm.util.ContaminationUtil.HazardType;
 import com.hbm.saveddata.RadiationSavedData;
 
 import net.minecraft.block.BlockStone;
+import net.minecraft.block.material.MapColor;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -122,6 +124,12 @@ public class ToxicBlock extends BlockFluidClassic {
 		return false;
 	}
 	
+	@Override
+	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
+		if(this == ModBlocks.toxic_block) return HbmCorePlugin.TOXIC_BLOCK;
+		return super.getMapColor(state, worldIn, pos);
+	}
+
 	@Override
 	public int tickRate(World world) {
 		return 15;

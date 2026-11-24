@@ -83,18 +83,25 @@ public class HbmAnimations {
 		if(hotbar[slot] == null)
 			return null;
 
-		if(hotbar[slot].gunId != null && hotbar[slot].gunId.equals(ItemGunBase.getGunId(stack))) {
-			return hotbar[slot];
+		if(hotbar[slot].gunId != null && !hotbar[slot].gunId.isEmpty()) {
+			return hotbar[slot].gunId.equals(ItemGunBase.getGunId(stack)) ? hotbar[slot] : null;
 		}
 
-		return null;
+		//blade animations carry no gunId, they are matched by item key
+		return hotbar[slot].key != null && hotbar[slot].key.equals(stack.getItem().getTranslationKey()) ? hotbar[slot] : null;
 	}
 	
 	public static void moveAnimToSlot(EntityPlayer player, ItemStack stack, EnumHand hand) {
 		int currentSlot = hand == EnumHand.OFF_HAND ? 9 : player.inventory.currentItem;
 		int otherSlot = hand == EnumHand.OFF_HAND ? player.inventory.currentItem : 9;
 		Animation anim = hotbar[otherSlot];
-		if(anim != null && !stack.isEmpty() && anim.gunId != null && anim.gunId.equals(ItemGunBase.getGunId(stack))) {
+		if(anim == null || stack.isEmpty())
+			return;
+
+		if(anim.gunId != null && !anim.gunId.isEmpty()) {
+			if(anim.gunId.equals(ItemGunBase.getGunId(stack)))
+				hotbar[currentSlot] = anim;
+		} else if(anim.key != null && anim.key.equals(stack.getItem().getTranslationKey())) {
 			hotbar[currentSlot] = anim;
 		}
 	}
@@ -127,5 +134,4 @@ public class HbmAnimations {
 		}
 		return 0;
 	}
-
 }

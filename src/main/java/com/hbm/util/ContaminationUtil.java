@@ -69,8 +69,7 @@ public class ContaminationUtil {
 
 	public static final String NTM_NEUTRON_NBT_KEY = "ntmNeutron";
 
-	public static final double ATTEN_GAMMA = 130.0D;
-	public static final double ATTEN_THERMAL = 33.0D;
+	public static final double ATTEN_GAMMA = 300.0D;
 
 	/**
 	 * Calculates how much radiation can be applied to this entity by calculating resistance
@@ -587,7 +586,8 @@ public class ContaminationUtil {
 			vec = vec.normalize();
 			double dmgLen = Math.max(len, dmgLenMin);
 
-			double res = 1D;
+			double resBlast = 1D;
+			double resRad = 1D;
 
 			for(int i = 1; i < len; i++) {
 				int ix = (int)Math.floor(x + vec.xCoord * i);
@@ -598,7 +598,8 @@ public class ContaminationUtil {
 				if(chunk == null) continue;
 				float blockRes = chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
 				if(blockRes > 0) {
-					res *= (1.0D + blockRes * 0.05D);
+					resBlast *= Math.exp(0.183D * blockRes);
+					resRad *= Math.exp(0.77D * blockRes);
 				}
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
@@ -606,7 +607,7 @@ public class ContaminationUtil {
 			if(isLiving && rad3d > 0){
 				float eRads = rad3d;
 				eRads *= (float)Math.exp(-dmgLen / ATTEN_GAMMA);
-				eRads /= (float)(dmgLen * dmgLen * Math.sqrt(res));
+				eRads /= (float)(dmgLen * dmgLen * resRad);
 
 				contaminate((EntityLivingBase)e, HazardType.RADIATION, ContaminationType.CREATIVE, eRads);
 			}
@@ -618,10 +619,9 @@ public class ContaminationUtil {
 				contaminate((EntityLivingBase)e, HazardType.DIGAMMA, ContaminationType.DIGAMMA, eDig);
 			}
 
-			if(fire3d > 0.025 && res < 2000 && (!(getEntityConversionType(e) == 0) && !isPlayerExempt(e))) {
-				float fireDmg = fire3d;
-				fireDmg *= (float)Math.exp(-dmgLen * weatherFactor / ATTEN_THERMAL);
-				fireDmg /= (float)(dmgLen * dmgLen * res);
+			if(fire3d > 0.025 && resRad <= 2 && (!(getEntityConversionType(e) == 0) && !isPlayerExempt(e))) {
+				float fireDmg = fire3d * (float)(1.0D - 0.5D * weatherFactor);
+				fireDmg /= (float)(dmgLen * dmgLen * resRad);
 				if(fireDmg > 0.025){
 					if(fireDmg > 0.1 && e instanceof EntityPlayer p) {
 
@@ -640,8 +640,8 @@ public class ContaminationUtil {
 				}
 			}
 
-			if(blast3d > 0 && res < 10000 && len < blastRange && (!(getEntityConversionType(e) == 0) && !isPlayerExempt(e))) {
-				float blastDmg = blast3d / (float)(dmgLen * dmgLen * dmgLen * res);
+			if(blast3d > 0 && resBlast < 10000 && len < blastRange && (!(getEntityConversionType(e) == 0) && !isPlayerExempt(e))) {
+				float blastDmg = blast3d / (float)(dmgLen * dmgLen * dmgLen * resBlast);
 				if(blastDmg > 0.025){
 					if(rad3d > 0) e.attackEntityFrom(ModDamageSource.nuclearBlast, blastDmg);
 					else e.attackEntityFrom(ModDamageSource.blast, blastDmg);

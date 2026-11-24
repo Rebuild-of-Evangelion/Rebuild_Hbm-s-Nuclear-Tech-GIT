@@ -1,6 +1,7 @@
 package com.hbm.world.biome;
 
 import com.hbm.config.WorldConfig;
+import com.hbm.util.ContaminationUtil;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -172,7 +173,7 @@ public class BiomeGenDustWastes extends Biome {
 			if (!(o instanceof EntityLivingBase)) continue;
 			EntityLivingBase entity = (EntityLivingBase) o;
 			BlockPos pos = new BlockPos(entity.posX, entity.getEntityBoundingBox().maxY, entity.posZ);
-			if (event.world.getBiome(pos) instanceof BiomeGenDustWastes && event.world.getLightFor(EnumSkyBlock.SKY, pos) > 7 && !entity.isImmuneToFire()) {
+			if (event.world.getBiome(pos) instanceof BiomeGenDustWastes && event.world.getLightFor(EnumSkyBlock.SKY, pos) > 7 && !entity.isImmuneToFire() && !ContaminationUtil.isPlayerExempt(entity)) {
 				entity.setFire(5);
 				entity.attackEntityFrom(DamageSource.ON_FIRE, 2);
 			}

@@ -156,6 +156,7 @@ public final class DynamicTextureData {
 		addMeta(ModBlocks.waste_gravel, DynamicTextureData.ratioCurve(0x7F7C7B, 0x323231));
 		addMeta(ModBlocks.waste_sand, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740));
 		addMeta(ModBlocks.waste_sand_red, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740));
+		addMeta(ModBlocks.waste_snow, DynamicTextureData.ratioCurve(0xE4EEEE, 0x6F7070));
 		addMeta(ModBlocks.waste_snow_block, DynamicTextureData.ratioCurve(0xE4EEEE, 0x6F7070));
 		addMeta(ModBlocks.waste_clay, DynamicTextureData.luminanceCurve(0xA25426, 0x32251E));
 		addMeta(ModBlocks.waste_terracotta, DynamicTextureData.ratioCurve(0xA25426, 0x32251E));

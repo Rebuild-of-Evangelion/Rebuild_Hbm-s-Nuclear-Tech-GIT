@@ -89,11 +89,7 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 			}
 		}
 
-		double blastMax = 2.0 * this.radius;
-		double thermalMax = Math.min(2.0 * this.radius * Math.pow(this.radius / 80.0, 0.2), 4.0 * this.radius);
-		double radMax = 1.4 * this.radius * Math.pow(this.radius / 80.0, -0.9);
-		double maxRange = Math.max(blastMax, Math.max(thermalMax, radMax));
-		dealDamage(world, this.posX, this.posY, this.posZ, maxRange);
+		dealDamage(world, this.posX, this.posY, this.posZ, this.radius);
 
 		//make some noise
 		if(!mute) {
@@ -158,18 +154,19 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 		}
 	}
 
-	public void dealDamage(World world, double x, double y, double z, double radius) {
-		double energy = Math.pow(2.0 * this.radius + 10, 3);
-		double blastMax = 2.0 * this.radius;
-		double thermalMax = Math.min(2.0 * this.radius * Math.pow(this.radius / 80.0, 0.2), 4.0 * this.radius);
-		double radMax = 1.4 * this.radius * Math.pow(this.radius / 80.0, -0.9);
+	public void dealDamage(World world, double x, double y, double z, int radius) {
+		double energy = Math.pow(3.7 * radius, 3);
+		double capRange = 2.5 * radius;
+		double blastMax = 2.0 * radius;
+		double thermalMax = Math.min(2.0 * radius * Math.pow(radius / 80.0, 0.1), capRange);
+		double maxRange = Math.max(blastMax, Math.max(thermalMax, capRange));
 
-		List<Entity> entities = ContaminationUtil.getEntitiesWithinAABBIndexed(world, new AxisAlignedBB(x-radius, y-radius, z-radius, x+radius, y+radius, z+radius));
+		List<Entity> entities = ContaminationUtil.getEntitiesWithinAABBIndexed(world, new AxisAlignedBB(x-maxRange, y-maxRange, z-maxRange, x+maxRange, y+maxRange, z+maxRange));
 		double weatherFactor = ContaminationUtil.getWeatherAttenuationFactor(world, x, y, z);
 		ChunkProviderServer cps = world.getChunkProvider() instanceof ChunkProviderServer ? (ChunkProviderServer) world.getChunkProvider() : null;
 
 		float dmgScale = 1.0F;
-		if (this.radius <= 25) dmgScale /= 0.65F;
+		if (radius <= 25) dmgScale /= 0.65F;
 		if (!this.fallout) dmgScale /= 0.85F;
 
 		for(Entity e : entities) {
@@ -182,9 +179,10 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 			double len = vec.length();
 
 			vec = vec.normalize();
-			double dmgLen = Math.max(len, radius * 0.05D);
+			double dmgLen = Math.max(len, maxRange * 0.05D);
 
-			double res = 1D;
+			double resBlast = 1D;
+			double resRad = 1D;
 
 			for(int i = 1; i < len; i++) {
 				int ix = (int)Math.floor(x + vec.xCoord * i);
@@ -195,15 +193,16 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				if(chunk == null) continue;
 				float blockRes = chunk.getBlockState(ix, iy, iz).getBlock().getExplosionResistance(null);
 				if(blockRes > 0) {
-					res *= (1.0D + blockRes * 0.05D);
+					resBlast *= Math.exp(0.183D * blockRes);
+					resRad *= Math.exp(0.77D * blockRes);
 				}
 			}
 			boolean isLiving = e instanceof EntityLivingBase;
 
-			if(isLiving && fallout && this.ticksExisted <= Math.max((int)Math.ceil(this.radius * 0.02), 1) && len < radMax){
-				float eRads = (float)(0.05 * energy) * (float)Math.pow(0.5, (double)2 * this.ticksExisted / this.radius) + strength;
+			if(isLiving && fallout && this.ticksExisted <= Math.max((int)Math.ceil(radius * 0.02), 1) && len < capRange){
+				float eRads = (float)(0.05 * energy) * (float)Math.pow(0.5, (double)2 * this.ticksExisted / radius) + strength;
 				eRads *= (float)Math.exp(-dmgLen / ContaminationUtil.ATTEN_GAMMA);
-				eRads /= (float)(dmgLen * dmgLen * Math.sqrt(res));
+				eRads /= (float)(dmgLen * dmgLen * resRad);
 				eRads *= dmgScale;
 
 				ContaminationUtil.contaminate((EntityLivingBase)e, ContaminationUtil.HazardType.RADIATION, ContaminationUtil.ContaminationType.CREATIVE, eRads);
@@ -211,18 +210,18 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 					if(e instanceof EntityGlowingOne) continue;
 					convertToGlow(world, (EntityZombie) e);
 				}
-				if (eRads >= 100 && ContaminationUtil.getEntityConversionType(e) == 0 && this.radius > 120) {
+				if (eRads >= 100 && ContaminationUtil.getEntityConversionType(e) == 0 && radius >= 120) {
 					if(e instanceof EntityThermonuclearCat) continue;
 					convertToThermo(world, (EntityOcelot) e);
 				}
 			}
 
-			int thermalDuration = Math.min(9 * this.radius, 4500);
+			int thermalDuration = Math.min(9 * radius, 4500);
 			double thermalFrac = (double)(this.ticksExisted - 1) / (thermalDuration - 1);
 			double currentThermalRadius = thermalMax * (1.0 - thermalFrac * thermalFrac * thermalFrac);
 
-			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.radius > 25 && this.ticksExisted <= thermalDuration && res < 7000 && len <= currentThermalRadius) {
-				float fireDamage = (float)((0.35F * dmgScale * energy * Math.pow(0.5, 0.5 * this.ticksExisted / this.radius) * Math.exp(-dmgLen * weatherFactor / ContaminationUtil.ATTEN_THERMAL)) / (float) (dmgLen * dmgLen * res));
+			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && radius > 25 && this.ticksExisted <= thermalDuration && resRad <= 2 && len <= currentThermalRadius) {
+				float fireDamage = (float)((0.35F * dmgScale * energy * Math.pow(0.5, 0.5 * this.ticksExisted / radius) * (1.0D - 0.5D * weatherFactor)) / (float) (dmgLen * dmgLen * resRad));
 				if (fireDamage > 0.025) {
 					if (fireDamage > 0.1 && e instanceof EntityPlayer p) {
 						if (p.getHeldItemMainhand().getItem() == ModItems.marshmallow && p.getRNG().nextInt((int) len) == 0) {
@@ -239,12 +238,12 @@ public class EntityNukeExplosionMK5 extends EntityChunky {
 				}
 			}
 
-			int blastDuration = (int)Math.ceil(80.0 * Math.cbrt(this.radius / 100.0));
-			double shockSpeed = 2D * this.radius / (double)blastDuration;
+			int blastDuration = (int)Math.ceil(80.0 * Math.cbrt(radius / 100.0));
+			double shockSpeed = 2D * radius / (double)blastDuration;
 			double currentBlastRadius = this.ticksExisted * Math.max(2D, shockSpeed);
 
-			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.ticksExisted <= blastDuration && res < 10000 && len < currentBlastRadius && len < blastMax) {
-				float blastDamage = (float)(0.5F * dmgScale * energy) / (float)(dmgLen * dmgLen * dmgLen * res);
+			if ((!(ContaminationUtil.getEntityConversionType(e) == 0) && !ContaminationUtil.isPlayerExempt(e)) && this.ticksExisted <= blastDuration && resBlast < 10000 && len < currentBlastRadius && len < blastMax) {
+				float blastDamage = (float)(0.5F * dmgScale * energy) / (float)(dmgLen * dmgLen * dmgLen * resBlast);
 				if(blastDamage > 0.025){
 					if(fallout) e.attackEntityFrom(ModDamageSource.nuclearBlast, blastDamage);
 					else e.attackEntityFrom(ModDamageSource.blast, blastDamage);

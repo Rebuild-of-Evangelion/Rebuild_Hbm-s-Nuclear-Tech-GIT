@@ -851,7 +851,14 @@ public class SILEXRecipes {
 				.addOut(new WeightedRandomObject(new ItemStack(ModBlocks.mush), 35))
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.nuclear_waste_tiny), 15))
 				);
-		recipes.put(new ComparableStack(ModBlocks.mush_block, 1), new SILEXRecipe(100, 640, EnumWavelengths.DRX)
+		recipes.put(new ComparableStack(ModBlocks.brown_mush_block, 1), new SILEXRecipe(100, 640, EnumWavelengths.DRX)
+				.addOut(new WeightedRandomObject(new ItemStack(ModItems.biomass_compressed), 110))
+				.addOut(new WeightedRandomObject(new ItemStack(ModBlocks.mush), 80))
+				.addOut(new WeightedRandomObject(new ItemStack(ModItems.powder_poison), 6))
+				.addOut(new WeightedRandomObject(new ItemStack(ModItems.powder_radspice), 3))
+				.addOut(new WeightedRandomObject(new ItemStack(ModItems.egg_balefire_shard), 1))
+				);
+		recipes.put(new ComparableStack(ModBlocks.red_mush_block, 1), new SILEXRecipe(100, 640, EnumWavelengths.DRX)
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.biomass_compressed), 110))
 				.addOut(new WeightedRandomObject(new ItemStack(ModBlocks.mush), 80))
 				.addOut(new WeightedRandomObject(new ItemStack(ModItems.powder_poison), 6))

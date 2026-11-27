@@ -143,15 +143,15 @@ public final class DynamicTextureData {
 						.source("minecraft:blocks/ice")));
 
 		DynamicTextureData mushrooms = new DynamicTextureData()
-				.layer(new Layer("hbm:blocks/mush_block_skin_gen", Transform.HUE_SHIFT)
+				.layer(new Layer("hbm:blocks/brown_mush_block_skin_gen", Transform.HUE_SHIFT)
 						.source("minecraft:blocks/mushroom_block_skin_brown").param(85f / 360f).param(1f))
 				.layer(new Layer("hbm:blocks/mush_block_stem_gen", Transform.HUE_SHIFT)
 						.source("minecraft:blocks/mushroom_block_skin_stem").param(85f / 360f).param(1f))
 				.layer(new Layer("hbm:blocks/mush_block_inside_gen", Transform.HUE_SHIFT)
 						.source("minecraft:blocks/mushroom_block_inside").param(85f / 360f).param(1f))
-				.layer(new Layer("hbm:blocks/mush_block_red_skin_gen", Transform.HUE_SHIFT)
+				.layer(new Layer("hbm:blocks/red_mush_block_skin_gen", Transform.HUE_SHIFT)
 						.source("minecraft:blocks/mushroom_block_skin_red").param(85f / 360f).param(1f));
-		reg(ModBlocks.mush_block, mushrooms);
+		reg(ModBlocks.brown_mush_block, mushrooms);
 
 		addMeta(ModBlocks.waste_gravel, DynamicTextureData.ratioCurve(0x7F7C7B, 0x323231));
 		addMeta(ModBlocks.waste_sand, DynamicTextureData.ratioCurve(0xC5BE90, 0x484740));

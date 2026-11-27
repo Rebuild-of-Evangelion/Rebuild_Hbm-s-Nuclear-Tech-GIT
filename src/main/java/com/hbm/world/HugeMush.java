@@ -5,6 +5,7 @@ import java.util.Random;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.generic.BlockMushHuge;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockPos.MutableBlockPos;
@@ -18,7 +19,7 @@ public class HugeMush extends WorldGenerator {
 
 	public HugeMush(boolean red) {
 		super(false);
-		net.minecraft.block.Block b = red ? ModBlocks.mush_block_red : ModBlocks.mush_block;
+		Block b = red ? ModBlocks.red_mush_block : ModBlocks.brown_mush_block;
 		this.cap = b.getDefaultState();
 		this.stem = b.getDefaultState().withProperty(BlockMushHuge.VARIANT, BlockMushHuge.EnumType.STEM);
 	}

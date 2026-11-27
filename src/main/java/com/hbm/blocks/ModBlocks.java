@@ -531,8 +531,8 @@ public class ModBlocks {
 	
 	//Radiation blocks
 	public static final Block mush = new BlockMush(Material.PLANTS, "mush").setLightLevel(0.5F).setCreativeTab(MainRegistry.resourceTab);
-	public static final Block mush_block = new BlockMushHuge(Material.PLANTS, "mush_block").setLightLevel(1.0F).setHardness(0.2F).setCreativeTab(MainRegistry.resourceTab);
-	public static final Block mush_block_red = new BlockMushHuge(Material.PLANTS, "mush_block_red").setLightLevel(1.0F).setHardness(0.2F).setCreativeTab(MainRegistry.resourceTab);
+	public static final Block brown_mush_block = new BlockMushHuge(Material.PLANTS, "brown_mush_block").setLightLevel(1.0F).setHardness(0.2F).setCreativeTab(MainRegistry.resourceTab);
+	public static final Block red_mush_block = new BlockMushHuge(Material.PLANTS, "red_mush_block").setLightLevel(1.0F).setHardness(0.2F).setCreativeTab(MainRegistry.resourceTab);
 	
 	public static final Block block_waste = new BlockNuclearWaste("block_waste").makeBeaconable().setDisplayEffect(ExtDisplayEffect.RADFOG).setCreativeTab(MainRegistry.blockTab).setHardness(5.0F).setResistance(10.0F);
 	public static final Block block_waste_painted = new BlockNuclearWaste("block_waste_painted").makeBeaconable().setDisplayEffect(ExtDisplayEffect.RADFOG).setCreativeTab(MainRegistry.blockTab).setHardness(5.0F).setResistance(10.0F);
@@ -1570,7 +1570,7 @@ public class ModBlocks {
 	
 	public static void init(){
 	}
-	
+
 	public static void postInit(){
 		for(Block block : ALL_BLOCKS){
 			if(block instanceof BlockHazard){

@@ -58,7 +58,7 @@ public class BlockMushHuge extends Block {
 	}
 
 	public static IBlockState getState(boolean red, boolean stem) {
-		Block mb = red ? ModBlocks.mush_block_red : ModBlocks.mush_block;
+		Block mb = red ? ModBlocks.red_mush_block : ModBlocks.brown_mush_block;
 		return mb.getDefaultState().withProperty(VARIANT, stem ? EnumType.STEM : EnumType.CAP);
 	}
 
@@ -79,8 +79,8 @@ public class BlockMushHuge extends Block {
 
 	@Override
 	public MapColor getMapColor(IBlockState state, IBlockAccess worldIn, BlockPos pos) {
-		if(this == ModBlocks.mush_block) return HbmCorePlugin.MUSH_BLOCK;
-		if(this == ModBlocks.mush_block_red) return HbmCorePlugin.MUSH_BLOCK_RED;
+		if(this == ModBlocks.brown_mush_block) return HbmCorePlugin.MUSH_BLOCK;
+		if(this == ModBlocks.red_mush_block) return HbmCorePlugin.MUSH_BLOCK_RED;
 		return super.getMapColor(state, worldIn, pos);
 	}
 

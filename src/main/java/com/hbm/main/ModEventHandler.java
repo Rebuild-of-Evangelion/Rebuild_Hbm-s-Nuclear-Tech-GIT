@@ -1189,6 +1189,8 @@ public class ModEventHandler {
 				mapping.remap(Item.getItemFromBlock(ModBlocks.waste_grass));
 			} else if(path.equals("waste_grass_tall")) {
 				mapping.remap(Item.getItemFromBlock(ModBlocks.waste_tall_grass));
+			} else if(path.equals("mush_block")) {
+				mapping.remap(Item.getItemFromBlock(ModBlocks.brown_mush_block));
 			}
 		}
 	}
@@ -1201,6 +1203,8 @@ public class ModEventHandler {
 				mapping.remap(ModBlocks.waste_grass);
 			} else if(path.equals("waste_grass_tall")) {
 				mapping.remap(ModBlocks.waste_tall_grass);
+			} else if(path.equals("mush_block")) {
+				mapping.remap(ModBlocks.brown_mush_block);
 			}
 		}
 	}
